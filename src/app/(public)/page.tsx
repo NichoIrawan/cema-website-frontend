@@ -1,206 +1,809 @@
 'use client';
+import { motion, useScroll, useTransform } from 'framer-motion';
+import { useRef, useState, useEffect } from 'react';
+import { ImageWithFallback } from '@/components/ui/image-with-fallback';
+import {
+  Home,
+  Building2,
+  Wrench,
+  ArrowRight,
+  Calculator,
+  ClipboardCheck,
+  Sparkles,
+  DollarSign,
+  Check,
+} from 'lucide-react';
+import { Slider } from '../../components/ui/slider';
 
-import Link from 'next/link';
-import { useState, useEffect } from 'react';
+interface ServiceItem {
+  id: number;
+  icon: React.ComponentType<any>;
+  title: string;
+  description: string;
+  price?: string;
+  color: string;
+  image: string;
+  features: string[];
+}
+
+interface PortfolioItem {
+  id: number;
+  title: string;
+  category: string;
+  image: string;
+}
+
+interface ServiceOption {
+  value: string;
+  label: string;
+  multiplier: number;
+}
+
+interface MaterialOption {
+  value: string;
+  label: string;
+  multiplier: number;
+}
+
+interface Stat {
+  number: string;
+  label: string;
+}
 
 export default function HomePage() {
-    const [scrollY, setScrollY] = useState(0);
+  const onNavigate = (page: string) => {
+    window.location.href = `/${page}`;
+  };
 
-    useEffect(() => {
-        const handleScroll = () => setScrollY(window.scrollY);
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
+  // Calculator state
+  const [area, setArea] = useState([100]);
+  const [serviceType, setServiceType] = useState('interior');
+  const [materialType, setMaterialType] = useState('standard');
+  const [roomCount, setRoomCount] = useState([3]);
+  const [showResult, setShowResult] = useState(false);
 
-    return (
-        <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-            {/* Hero Section */}
-            <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-                {/* Animated Background */}
-                <div
-                    className="absolute inset-0 opacity-30"
-                    style={{ transform: `translateY(${scrollY * 0.5}px)` }}
-                >
-                    <div className="absolute top-20 left-20 w-96 h-96 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-3xl animate-pulse"></div>
-                    <div className="absolute bottom-20 right-20 w-96 h-96 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-                </div>
+  const serviceOptions: ServiceOption[] = [
+    { value: 'interior', label: 'Desain Interior', multiplier: 1 },
+    { value: 'architecture', label: 'Arsitektur', multiplier: 1.5 },
+    { value: 'renovation', label: 'Renovasi', multiplier: 1.2 },
+  ];
 
-                <div className="relative z-10 max-w-7xl mx-auto px-6 py-20 text-center">
-                    <div className="space-y-8 animate-fade-in">
-                        {/* Main Heading */}
-                        <h1 className="text-6xl md:text-8xl font-bold tracking-tight">
-                            <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent animate-gradient">
-                                Building Dreams
-                            </span>
-                            <br />
-                            <span className="text-slate-900 dark:text-white">
-                                Into Reality
-                            </span>
-                        </h1>
+  const materialOptions: MaterialOption[] = [
+    { value: 'standard', label: 'Standard', multiplier: 1 },
+    { value: 'premium', label: 'Premium', multiplier: 1.5 },
+    { value: 'luxury', label: 'Luxury', multiplier: 2 },
+  ];
 
-                        {/* Subtitle */}
-                        <p className="text-xl md:text-2xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto leading-relaxed">
-                            PT Cipta Maharupa Abadi - Your trusted partner in creating exceptional architectural masterpieces and innovative construction solutions.
-                        </p>
+  const calculateEstimate = () => {
+    const basePrice = 2500000; // IDR per m²
+    const service = serviceOptions.find((s) => s.value === serviceType);
+    const material = materialOptions.find((m) => m.value === materialType);
 
-                        {/* CTA Buttons */}
-                        <div className="flex flex-col sm:flex-row gap-6 justify-center items-center pt-8">
-                            <Link
-                                href="/services"
-                                className="group relative px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full font-semibold text-lg shadow-2xl shadow-purple-500/50 hover:shadow-purple-500/70 transform hover:scale-105 transition-all duration-300 overflow-hidden"
-                            >
-                                <span className="relative z-10">Explore Our Services</span>
-                                <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                            </Link>
+    const serviceMult = service?.multiplier || 1;
+    const materialMult = material?.multiplier || 1;
+    const roomMult = 1 + (roomCount[0] - 3) * 0.1;
 
-                            <Link
-                                href="/portfolio"
-                                className="px-8 py-4 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-full font-semibold text-lg shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 border-2 border-slate-200 dark:border-slate-700"
-                            >
-                                View Portfolio
-                            </Link>
-                        </div>
-                    </div>
+    const total = basePrice * area[0] * serviceMult * materialMult * roomMult;
+    return total;
+  };
 
-                    {/* Scroll Indicator */}
-                    <div className="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce">
-                        <div className="w-6 h-10 border-2 border-slate-400 dark:border-slate-600 rounded-full flex items-start justify-center p-2">
-                            <div className="w-1.5 h-3 bg-slate-400 dark:bg-slate-600 rounded-full animate-scroll"></div>
-                        </div>
-                    </div>
-                </div>
-            </section>
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+    }).format(value);
+  };
 
-            {/* Features Section */}
-            <section className="py-24 px-6 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
-                <div className="max-w-7xl mx-auto">
-                    <h2 className="text-5xl font-bold text-center mb-16 text-slate-900 dark:text-white">
-                        Why Choose <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">CEMA</span>
-                    </h2>
+  const handleCalculate = () => {
+    setShowResult(true);
+  };
 
-                    <div className="grid md:grid-cols-3 gap-8">
-                        {/* Feature 1 */}
-                        <div className="group relative bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 p-8 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-slate-200 dark:border-slate-700">
-                            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                            <div className="relative z-10">
-                                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center mb-6 transform group-hover:rotate-12 transition-transform duration-500">
-                                    <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                                    </svg>
-                                </div>
-                                <h3 className="text-2xl font-bold mb-4 text-slate-900 dark:text-white">Expert Design</h3>
-                                <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
-                                    Innovative architectural designs tailored to your vision, combining aesthetics with functionality.
-                                </p>
-                            </div>
-                        </div>
+  // Get portfolios from localStorage
+  const getPortfolios = (): PortfolioItem[] => {
+    if (typeof window === 'undefined') return [];
+    const stored = localStorage.getItem('portfolios');
+    if (stored) {
+      const portfolios = JSON.parse(stored);
+      // Filter portfolios marked to show on homepage and are active, limit to 4
+      const featuredPortfolios = portfolios.filter((p: any) => p.showOnHomepage && p.isActive !== false);
+      // If no featured items, fall back to first 4 active items
+      const activePortfolios = portfolios.filter((p: any) => p.isActive !== false);
+      const itemsToShow = featuredPortfolios.length > 0 ? featuredPortfolios : activePortfolios;
+      // Map to HomePage format
+      return itemsToShow.slice(0, 4).map((p: any): PortfolioItem => ({
+        id: p.id,
+        title: p.title,
+        category: p.category,
+        image: p.imageUrl,
+      }));
+    }
+    return [
+      {
+        id: 1,
+        title: 'Luxury Villa Design',
+        category: 'Interior',
+        image: 'https://images.unsplash.com/photo-1581784878214-8d5596b98a01?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsdXh1cnklMjBpbnRlcmlvciUyMGRlc2lnbnxlbnwxfHx8fDE3NjE4ODEzNjR8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
+      },
+      {
+        id: 2,
+        title: 'Modern Living Space',
+        category: 'Interior',
+        image: 'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtaW5pbWFsaXN0JTIwbGl2aW5nJTIwcm9vbXxlbnwxfHx8fDE3NjE4MTQyNTJ8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
+      },
+      {
+        id: 3,
+        title: 'Contemporary Kitchen',
+        category: 'Interior',
+        image: 'https://images.unsplash.com/photo-1641823911769-c55f23c25143?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBraXRjaGVuJTIwaW50ZXJpb3J8ZW58MXx8fHwxNzYxODMyMzEwfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
+      },
+      {
+        id: 4,
+        title: 'Elegant Bedroom',
+        category: 'Interior',
+        image: 'https://images.unsplash.com/photo-1704428382583-c9c7c1e55d94?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb250ZW1wb3JhcnklMjBiZWRyb29tJTIwZGVzaWdufGVufDF8fHx8MTc2MTg2OTk5N3ww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
+      },
+    ];
+  };
 
-                        {/* Feature 2 */}
-                        <div className="group relative bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 p-8 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-slate-200 dark:border-slate-700">
-                            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                            <div className="relative z-10">
-                                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mb-6 transform group-hover:rotate-12 transition-transform duration-500">
-                                    <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                                    </svg>
-                                </div>
-                                <h3 className="text-2xl font-bold mb-4 text-slate-900 dark:text-white">Quality Assurance</h3>
-                                <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
-                                    Uncompromising quality standards ensuring every project exceeds expectations and stands the test of time.
-                                </p>
-                            </div>
-                        </div>
+  // Get services from localStorage
+  const getServices = (): ServiceItem[] => {
+    if (typeof window === 'undefined') return [];
+    const stored = localStorage.getItem('services');
+    if (stored) {
+      const storedServices = JSON.parse(stored);
+      
+      // Map to HomePage format with default icons and colors
+      const serviceMap: Record<string, { icon: any; color: string; image: string }> = {
+        'Desain Arsitektur': {
+          icon: Building2,
+          color: '#8CC55A',
+          image: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhcmNoaXRlY3R1cmUlMjBkZXNpZ258ZW58MXx8fHwxNzYxOTMyMDAwfDA&ixlib=rb-4.1.0&q=80&w=1080',
+        },
+        'Desain Interior': {
+          icon: Home,
+          color: '#8CC55A',
+          image: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxpbnRlcmlvciUyMGRlc2lnbnxlbnwxfHx8fDE3NjE5MzIwMDB8MA&ixlib=rb-4.1.0&q=80&w=1080',
+        },
+        'Renovasi & Remodeling': {
+          icon: Wrench,
+          color: '#BC5D60',
+          image: 'https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxyZW5vdmF0aW9uJTIwaG91c2V8ZW58MXx8fHwxNzYxOTMyMDAwfDA&ixlib=rb-4.1.0&q=80&w=1080',
+        },
+        'Landscape Design': {
+          icon: Sparkles,
+          color: '#8CC55A',
+          image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYW5kc2NhcGUlMjBkZXNpZ258ZW58MXx8fHwxNzYxOTMyMDAwfDA&ixlib=rb-4.1.0&q=80&w=1080',
+        },
+        'Build & Construction': {
+          icon: Building2,
+          color: '#E2B546',
+          image: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb25zdHJ1Y3Rpb24lMjBzaXRlfGVufDF8fHx8MTc2MTkzMjAwMHww&ixlib=rb-4.1.0&q=80&w=1080',
+        },
+        'Konsultasi Desain': {
+          icon: ClipboardCheck,
+          color: '#8CC55A',
+          image: 'https://images.unsplash.com/photo-1556761175-b413da4baf72?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb25zdWx0YXRpb24lMjBtZWV0aW5nfGVufDF8fHx8MTc2MTkzMjAwMHww&ixlib=rb-4.1.0&q=80&w=1080',
+        },
+      };
 
-                        {/* Feature 3 */}
-                        <div className="group relative bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 p-8 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-slate-200 dark:border-slate-700">
-                            <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 to-orange-500/10 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                            <div className="relative z-10">
-                                <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-orange-500 rounded-2xl flex items-center justify-center mb-6 transform group-hover:rotate-12 transition-transform duration-500">
-                                    <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </div>
-                                <h3 className="text-2xl font-bold mb-4 text-slate-900 dark:text-white">Timely Delivery</h3>
-                                <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
-                                    Efficient project management ensuring on-time completion without compromising quality or safety.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
+      // Filter services marked to show on homepage and are active, limit to 3
+      const featuredServices = storedServices.filter((s: any) => s.showOnHomepage && s.isActive);
+      // If no featured items, fall back to first 3 active items
+      const activeServices = storedServices.filter((s: any) => s.isActive);
+      const itemsToShow = featuredServices.length > 0 ? featuredServices : activeServices;
 
-            {/* CTA Section */}
-            <section className="py-24 px-6">
-                <div className="max-w-5xl mx-auto">
-                    <div className="relative bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 rounded-3xl p-12 md:p-16 shadow-2xl overflow-hidden">
-                        {/* Background Pattern */}
-                        <div className="absolute inset-0 opacity-10">
-                            <div className="absolute top-0 left-0 w-72 h-72 bg-white rounded-full -translate-x-1/2 -translate-y-1/2"></div>
-                            <div className="absolute bottom-0 right-0 w-72 h-72 bg-white rounded-full translate-x-1/2 translate-y-1/2"></div>
-                        </div>
-
-                        <div className="relative z-10 text-center text-white space-y-8">
-                            <h2 className="text-4xl md:text-5xl font-bold">
-                                Ready to Start Your Project?
-                            </h2>
-                            <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto">
-                                Let's transform your vision into reality. Get in touch with our team today for a free consultation.
-                            </p>
-                            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center pt-4">
-                                <Link
-                                    href="/contact"
-                                    className="px-10 py-5 bg-white text-purple-600 rounded-full font-bold text-lg shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
-                                >
-                                    Contact Us Now
-                                </Link>
-                                <Link
-                                    href="/about"
-                                    className="px-10 py-5 bg-transparent border-2 border-white text-white rounded-full font-bold text-lg hover:bg-white hover:text-purple-600 transition-all duration-300"
-                                >
-                                    Learn More
-                                </Link>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Custom Animations */}
-            <style jsx>{`
-        @keyframes gradient {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
+      return itemsToShow.slice(0, 3).map((s: any): ServiceItem => {
+        const defaults = serviceMap[s.name] || {
+          icon: Home,
+          color: '#8CC55A',
+          image: 'https://images.unsplash.com/photo-1611001440648-e90aff42faa3',
+        };
         
-        @keyframes fade-in {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
+        return {
+          id: s.id,
+          icon: defaults.icon,
+          title: s.name,
+          description: s.description,
+          price: s.price,
+          color: defaults.color,
+          image: s.imageUrl || defaults.image,
+          features: s.features || [],
+        };
+      });
+    }
+    
+    return [
+      {
+        id: 1,
+        icon: Building2,
+        title: 'Desain Arsitektur',
+        description: 'Layanan desain arsitektur lengkap untuk rumah tinggal, komersial, dan bangunan publik',
+        price: 'Mulai dari Rp 15.000.000',
+        color: '#8CC55A',
+        image: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhcmNoaXRlY3R1cmUlMjBkZXNpZ258ZW58MXx8fHwxNzYxOTMyMDAwfDA&ixlib=rb-4.1.0&q=80&w=1080',
+        features: ['Konsep desain 3D', 'Gambar kerja lengkap', 'RAB (Rencana Anggaran Biaya)', 'Revisi unlimited hingga ACC'],
+      },
+      {
+        id: 2,
+        icon: Home,
+        title: 'Desain Interior',
+        description: 'Transformasi ruang interior dengan desain yang fungsional dan estetis',
+        price: 'Mulai dari Rp 10.000.000',
+        color: '#8CC55A',
+        image: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxpbnRlcmlvciUyMGRlc2lnbnxlbnwxfHx8fDE3NjE5MzIwMDB8MA&ixlib=rb-4.1.0&q=80&w=1080',
+        features: ['Konsep interior 3D', 'Pemilihan material & finishing', 'Furniture custom design', 'Mood board & color scheme'],
+      },
+      {
+        id: 3,
+        icon: Wrench,
+        title: 'Renovasi & Remodeling',
+        description: 'Renovasi total atau parsial untuk memberikan wajah baru pada bangunan Anda',
+        price: 'Mulai dari Rp 8.000.000',
+        color: '#BC5D60',
+        image: 'https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxyZW5vdmF0aW9uJTIwaG91c2V8ZW58MXx8fHwxNzYxOTMyMDAwfDA&ixlib=rb-4.1.0&q=80&w=1080',
+        features: ['Survey & analisa kondisi', 'Desain renovasi', 'Koordinasi kontraktor', 'Quality control'],
+      },
+      {
+        id: 4,
+        icon: Sparkles,
+        title: 'Landscape Design',
+        description: 'Desain taman dan landscape untuk menciptakan outdoor space yang menawan',
+        price: 'Mulai dari Rp 5.000.000',
+        color: '#8CC55A',
+        image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYW5kc2NhcGUlMjBkZXNpZ258ZW58MXx8fHwxNzYxOTMyMDAwfDA&ixlib=rb-4.1.0&q=80&w=1080',
+        features: ['Konsep landscape 3D', 'Pemilihan tanaman & hardscape', 'Sistem irigasi', 'Outdoor lighting design'],
+      },
+      {
+        id: 5,
+        icon: Building2,
+        title: 'Build & Construction',
+        description: 'Layanan konstruksi lengkap dari pondasi hingga finishing dengan quality control',
+        price: 'Mulai dari Rp 20.000.000',
+        color: '#E2B546',
+        image: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb25zdHJ1Y3Rpb24lMjBzaXRlfGVufDF8fHx8MTc2MTkzMjAwMHww&ixlib=rb-4.1.0&q=80&w=1080',
+        features: ['Project planning', 'Material procurement', 'Skilled workers team', 'Weekly progress report'],
+      },
+      {
+        id: 6,
+        icon: ClipboardCheck,
+        title: 'Konsultasi Desain',
+        description: 'Konsultasi profesional untuk mendapatkan solusi terbaik untuk proyek Anda',
+        price: 'Rp 500.000 / sesi',
+        color: '#8CC55A',
+        image: 'https://images.unsplash.com/photo-1556761175-b413da4baf72?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb25zdWx0YXRpb24lMjBtZWV0aW5nfGVufDF8fHx8MTc2MTkzMjAwMHww&ixlib=rb-4.1.0&q=80&w=1080',
+        features: ['Durasi 1-2 jam', 'Diskusi konsep & ide', 'Rekomendasi material', 'Estimasi budget'],
+      },
+    ];
+  };
 
-        @keyframes scroll {
-          0% { transform: translateY(0); opacity: 0; }
-          50% { opacity: 1; }
-          100% { transform: translateY(12px); opacity: 0; }
-        }
+  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
+  const [services, setServices] = useState<ServiceItem[]>([]);
 
-        .animate-gradient {
-          background-size: 200% 200%;
-          animation: gradient 5s ease infinite;
-        }
+  // Initialize data on client side only
+  useEffect(() => {
+    setPortfolioItems(getPortfolios());
+    setServices(getServices());
+  }, []);
 
-        .animate-fade-in {
-          animation: fade-in 1s ease-out;
-        }
+  return (
+    <div className="min-h-screen">
+      {/* Hero Section - Side by Side Layout */}
+      <section className="relative py-20 bg-gradient-to-br from-[#F7F7F7] via-white to-[#F7F7F7] overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* Left Content */}
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.8, delay: 0.1 }}
+                className="inline-block mb-6 px-6 py-2 bg-[#8CC55A]/10 rounded-full text-[#8CC55A] border border-[#8CC55A]/20"
+              >
+                Arsitektur & Desain Interior Profesional
+              </motion.div>
+              <h1 className="text-[#333333] mb-6 text-4xl lg:text-5xl font-bold leading-tight">
+                Wujudkan Hunian Impian Anda Bersama CEMA Design
+              </h1>
+              <p className="text-[#868686] text-lg mb-10 leading-relaxed">
+                Layanan lengkap dari konsep hingga realisasi untuk menciptakan ruang yang sempurna sesuai visi Anda
+              </p>
+              <div className="flex flex-wrap gap-4">
+                <motion.button
+                  onClick={() => onNavigate('booking')}
+                  className="px-8 py-4 bg-[#8CC55A] text-white rounded-lg hover:bg-[#7AB84A] transition-colors inline-flex items-center gap-2 shadow-lg font-medium"
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Konsultasi Gratis <ArrowRight size={20} />
+                </motion.button>
+                <motion.button
+                  onClick={() => {
+                    document.getElementById('calculator')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="px-8 py-4 bg-white text-[#8CC55A] border-2 border-[#8CC55A] rounded-lg hover:bg-[#8CC55A] hover:text-white transition-colors inline-flex items-center gap-2 shadow-lg font-medium"
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Calculator size={20} /> Hitung Estimasi
+                </motion.button>
+              </div>
+            </motion.div>
 
-        .animate-scroll {
-          animation: scroll 2s ease-in-out infinite;
-        }
+            {/* Right - 3D Illustration */}
+            <motion.div
+              initial={{ opacity: 0, x: 30, scale: 0.9 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="relative hidden lg:block pt-12"
+            >
+              <div className="relative w-full max-w-2xl mx-auto">
+                <img
+                  src='/images/3d-model-house.png'
+                  alt="3D Interior Design"
+                  className="w-full h-auto object-contain"
+                />
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
 
-        .delay-1000 {
-          animation-delay: 1s;
-        }
-      `}</style>
-        </main>
-    );
+      {/* Stats Section */}
+      <section className="py-16 bg-white border-t border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="grid grid-cols-2 md:grid-cols-4 gap-8"
+          >
+            {([
+              { number: '500+', label: 'Proyek Selesai' },
+              { number: '15+', label: 'Tahun Pengalaman' },
+              { number: '98%', label: 'Kepuasan Klien' },
+              { number: '50+', label: 'Tim Profesional' },
+            ] as Stat[]).map((stat: Stat, index: number) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                className="text-center"
+              >
+                <div className="text-3xl md:text-4xl text-[#8CC55A] font-bold mb-2">{stat.number}</div>
+                <div className="text-[#868686] font-medium">{stat.label}</div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Services Section - Enhanced with 3D Visuals */}
+      <section className="py-20 bg-white" id="services">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-[#333333] mb-4">Layanan Terbaik Kami</h2>
+            <p className="text-[#868686] max-w-2xl mx-auto text-lg">
+              Solusi lengkap untuk semua kebutuhan arsitektur dan desain interior Anda
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {services.map((service: ServiceItem, index: number) => (
+              <motion.div
+                key={service.id || index}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1, duration: 0.5 }}
+                whileHover={{ y: -10 }}
+                className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 flex flex-col border border-gray-100"
+              >
+                {/* Image Header */}
+                <div className="relative h-56 overflow-hidden">
+                  <ImageWithFallback
+                    src={service.image}
+                    alt={service.title}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
+                  <div className="absolute top-4 right-4 w-12 h-12 rounded-full flex items-center justify-center shadow-lg bg-white">
+                    <service.icon size={24} style={{ color: service.color }} />
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="p-6 flex flex-col flex-grow">
+                  <h3 className="text-[#333333] mb-2">{service.title}</h3>
+                  <p className="text-[#868686] mb-4 line-clamp-2">{service.description}</p>
+                  
+                  {/* Price */}
+                  {service.price && (
+                    <div className="text-[#8CC55A] mb-4">{service.price}</div>
+                  )}
+                  
+                  {/* Features List */}
+                  {service.features && service.features.length > 0 && (
+                    <div className="mb-6 space-y-2 flex-grow">
+                      {service.features.slice(0, 4).map((feature: string, idx: number) => (
+                        <div key={idx} className="flex items-start gap-2 text-sm">
+                          <Check className="text-[#8CC55A] flex-shrink-0 mt-0.5" size={16} />
+                          <span className="text-[#868686]">{feature}</span>
+                        </div>
+                      ))}
+                      {service.features.length > 4 && (
+                        <div className="text-[#868686] text-sm">
+                          +{service.features.length - 4} fitur lainnya
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* CTA Button */}
+                  <motion.button
+                    onClick={() => onNavigate('booking')}
+                    className="w-full py-3 rounded-lg text-white transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+                    style={{ backgroundColor: service.color }}
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    Konsultasi Gratis <ArrowRight size={18} />
+                  </motion.button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* View All Services CTA */}
+          <div className="text-center mt-12">
+            <motion.button
+              onClick={() => onNavigate('services')}
+              className="px-8 py-4 border-2 border-[#8CC55A] text-[#8CC55A] rounded-lg hover:bg-[#8CC55A] hover:text-white transition-colors inline-flex items-center gap-2 shadow-lg"
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              Lihat Semua Layanan <ArrowRight size={20} />
+            </motion.button>
+          </div>
+        </div>
+      </section>
+
+      {/* Portfolio Highlights - Horizontal Scroll */}
+      <section className="py-20 bg-[#F7F7F7]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mb-12"
+          >
+            <h2 className="text-[#333333] mb-4">Portfolio Kami</h2>
+            <p className="text-[#868686]">
+              Lihat beberapa proyek terbaik yang telah kami kerjakan
+            </p>
+          </motion.div>
+
+          <div className="flex gap-6 overflow-x-auto pb-8 scrollbar-hide snap-x snap-mandatory">
+            {portfolioItems.map((item: PortfolioItem, index: number) => (
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, x: 50 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                whileHover={{ scale: 1.05 }}
+                className="flex-shrink-0 w-80 snap-center cursor-pointer"
+              >
+                <div className="relative h-96 rounded-lg overflow-hidden group">
+                  <ImageWithFallback
+                    src={item.image}
+                    alt={item.title}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-6">
+                    <div>
+                      <div className="text-[#8CC55A] mb-2">{item.category}</div>
+                      <h3 className="text-white">{item.title}</h3>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="text-center mt-8">
+            <motion.button
+              onClick={() => onNavigate('portfolio')}
+              className="px-6 py-3 border-2 border-[#8CC55A] text-[#8CC55A] rounded-lg hover:bg-[#8CC55A] hover:text-white transition-colors inline-flex items-center gap-2"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              Lihat Semua Portfolio <ArrowRight size={20} />
+            </motion.button>
+          </div>
+        </div>
+      </section>
+
+      {/* Calculator Section */}
+      <section className="py-20 bg-white" id="calculator">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <Calculator size={64} className="mx-auto mb-4 text-[#8CC55A]" />
+            <h2 className="text-[#333333] mb-4">Kalkulator Estimasi Biaya</h2>
+            <p className="text-[#868686] max-w-2xl mx-auto">
+              Hitung perkiraan biaya proyek desain Anda dengan mudah
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Calculator Form */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="lg:col-span-2 bg-[#F7F7F7] rounded-lg shadow-lg p-8"
+            >
+              <h3 className="text-[#333333] mb-6">Input Detail Proyek</h3>
+
+              <div className="space-y-8">
+                {/* Building Area */}
+                <div>
+                  <label className="block text-[#333333] mb-2">
+                    <Home className="inline mr-2" size={18} />
+                    Luas Bangunan
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <Slider
+                      value={area}
+                      onValueChange={setArea}
+                      min={20}
+                      max={500}
+                      step={10}
+                      className="flex-1"
+                    />
+                    <div className="w-24 text-center">
+                      <span className="text-[#333333]">{area[0]} m²</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Service Type */}
+                <div>
+                  <label className="block text-[#333333] mb-2">
+                    <Sparkles className="inline mr-2" size={18} />
+                    Jenis Layanan
+                  </label>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {serviceOptions.map((option: ServiceOption) => (
+                      <motion.button
+                        key={option.value}
+                        onClick={() => setServiceType(option.value)}
+                        className={`p-4 rounded-lg border-2 transition-colors ${
+                          serviceType === option.value
+                            ? 'border-[#8CC55A] bg-[#8CC55A]/10'
+                            : 'border-gray-200 hover:border-[#8CC55A]'
+                        }`}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <div className="text-[#333333]">{option.label}</div>
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Material Type */}
+                <div>
+                  <label className="block text-[#333333] mb-2">
+                    <Sparkles className="inline mr-2" size={18} />
+                    Kualitas Material
+                  </label>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {materialOptions.map((option: MaterialOption) => (
+                      <motion.button
+                        key={option.value}
+                        onClick={() => setMaterialType(option.value)}
+                        className={`p-4 rounded-lg border-2 transition-colors ${
+                          materialType === option.value
+                            ? 'border-[#8CC55A] bg-[#8CC55A]/10'
+                            : 'border-gray-200 hover:border-[#8CC55A]'
+                        }`}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <div className="text-[#333333]">{option.label}</div>
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Room Count */}
+                <div>
+                  <label className="block text-[#333333] mb-2">
+                    Jumlah Ruangan
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <Slider
+                      value={roomCount}
+                      onValueChange={setRoomCount}
+                      min={1}
+                      max={10}
+                      step={1}
+                      className="flex-1"
+                    />
+                    <div className="w-24 text-center">
+                      <span className="text-[#333333]">{roomCount[0]} ruangan</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Calculate Button */}
+                <motion.button
+                  onClick={handleCalculate}
+                  className="w-full bg-[#8CC55A] text-white py-3 rounded-lg hover:bg-[#7AB84A] transition-colors flex items-center justify-center gap-2"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Calculator size={20} />
+                  Hitung Estimasi
+                </motion.button>
+              </div>
+            </motion.div>
+
+            {/* Result Section */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="space-y-6"
+            >
+              {/* Estimate Result */}
+              <div className="bg-white rounded-lg shadow-lg p-6">
+                <h4 className="text-[#333333] mb-4">
+                  <DollarSign className="inline mr-2" size={20} />
+                  Estimasi Biaya
+                </h4>
+                {showResult ? (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="space-y-4"
+                  >
+                    <div className="p-6 bg-[#8CC55A] rounded-lg text-white text-center">
+                      <div className="mb-2">Total Estimasi</div>
+                      <div className="text-2xl">{formatCurrency(calculateEstimate())}</div>
+                    </div>
+                    <div className="text-[#868686]">
+                      <p className="mb-2">Rincian:</p>
+                      <ul className="space-y-1">
+                        <li>• Luas: {area[0]} m²</li>
+                        <li>• Layanan: {serviceOptions.find((s) => s.value === serviceType)?.label}</li>
+                        <li>• Material: {materialOptions.find((m) => m.value === materialType)?.label}</li>
+                        <li>• Ruangan: {roomCount[0]} ruangan</li>
+                      </ul>
+                    </div>
+                    <motion.button
+                      onClick={() => onNavigate('booking')}
+                      className="w-full bg-[#E2B546] text-white py-2 rounded-lg hover:bg-[#D1A435] transition-colors"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      Booking Konsultasi
+                    </motion.button>
+                  </motion.div>
+                ) : (
+                  <div className="text-center text-[#868686] py-8">
+                    <Calculator size={48} className="mx-auto mb-4 opacity-30" />
+                    <p>Isi form dan klik "Hitung Estimasi"</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Info Box */}
+              <div className="bg-[#E2B546]/10 border border-[#E2B546] rounded-lg p-6">
+                <div className="text-[#E2B546] mb-3">💡 Catatan</div>
+                <ul className="space-y-2 text-[#868686]">
+                  <li>• Estimasi ini adalah perkiraan kasar</li>
+                  <li>• Harga final dapat berbeda</li>
+                  <li>• Konsultasi gratis untuk detail lebih lanjut</li>
+                </ul>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section - Design Quiz */}
+      <section className="py-20 bg-[#F7F7F7]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-2xl mx-auto">
+            {/* Quiz CTA */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              whileHover={{ scale: 1.05 }}
+              onClick={() => onNavigate('quiz')}
+              className="bg-[#BC5D60] text-white p-12 rounded-lg cursor-pointer shadow-xl text-center"
+            >
+              <ClipboardCheck size={64} className="mx-auto mb-6" />
+              <h2 className="text-white mb-4">Tidak Yakin Gaya Desain Anda?</h2>
+              <p className="mb-8 opacity-90 text-lg">
+                Ikuti quiz interaktif kami untuk menemukan gaya desain yang sempurna sesuai kepribadian dan kebutuhan Anda
+              </p>
+              <motion.div 
+                className="inline-flex items-center gap-2 text-lg px-8 py-3 bg-white text-[#BC5D60] rounded-lg"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Mulai Quiz <ArrowRight size={24} />
+              </motion.div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="py-20 bg-[#F7F7F7]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-[#333333] mb-4">Apa Kata Klien Kami</h2>
+            <p className="text-[#868686]">
+              Kepuasan klien adalah prioritas utama kami
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[1, 2, 3].map((_: number, index: number) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                className="bg-white p-6 rounded-lg shadow-md"
+              >
+                <div className="flex items-center gap-1 mb-4">
+                  {[...Array(5)].map((_: any, i: number) => (
+                    <span key={i} className="text-[#E2B546]">
+                      ★
+                    </span>
+                  ))}
+                </div>
+                <p className="text-[#868686] mb-4">
+                  "Sangat puas dengan hasil desain dari Company X. Tim sangat profesional
+                  dan memahami kebutuhan kami."
+                </p>
+                <div>
+                  <div className="text-[#333333]">Budi Santoso</div>
+                  <div className="text-[#868686]">Jakarta</div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
 }
