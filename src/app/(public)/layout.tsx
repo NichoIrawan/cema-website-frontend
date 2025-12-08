@@ -7,6 +7,7 @@ export default function PublicLayout({
 }: {
     children: React.ReactNode;
 }) {
+    
     return (
         <>
             <Navbar />
