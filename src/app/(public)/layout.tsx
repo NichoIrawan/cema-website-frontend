@@ -1,5 +1,6 @@
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import ChatWidget from '@/components/layout/ChatWidget';
 
 export default function PublicLayout({
     children,
@@ -10,6 +11,7 @@ export default function PublicLayout({
         <>
             <Navbar />
             <main className="min-h-screen">{children}</main>
+            <ChatWidget />
             <Footer />
         </>
     );
