@@ -1,15 +1,15 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import './about.css';// Import CSS khusus halaman ini jika tidak di global
+import './about.css';
 
-// --- Metadata untuk SEO ---
+
 export const metadata = {
   title: 'Tentang Kami - Cema Design',
   description: 'Perjalanan Cema Design dari studio kecil hingga firma arsitektur terpercaya.',
 };
 
 export default function AboutPage() {
-  // Data Timeline
+
   const timelineData = [
     {
       year: "2016",
