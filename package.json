@@ -11,7 +11,9 @@
   "dependencies": {
     "next": "^16.0.3",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "lucide-react": "^0.556.0",
+    "motion": "^12.23.25"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

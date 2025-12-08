@@ -1,17 +1,19 @@
-// import './globals.css'; // Import global styles
 
+import { Navbar } from '@/components/layout/Navbar';
+import { Footer } from '@/components/layout/Footer';
 
-const Navbar = () => <nav className="navbar-placeholder">Navbar Component</nav>;
-const Footer = () => <footer className="footer-placeholder">Footer Component</footer>;
-const ChatWidget = () => <div className="chat-placeholder">Chat Widget</div>;
-
-export default function PublicLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <>
-      <Navbar />
-      {children}
-      <ChatWidget />
-      <Footer />
-    </>
-  );
+export default function PublicLayout({
+    children,
+}: {
+    children: React.ReactNode;
+}) {
+    return (
+        <>
+            <Navbar />
+            <div className="pt-20 min-h-screen">
+                {children}
+            </div>
+            <Footer />
+        </>
+    );
 }
