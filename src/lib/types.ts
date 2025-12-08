@@ -74,3 +74,48 @@ export interface CalculatorResult {
         finalPrice: number;
     };
 }
+
+export interface Portfolio {
+    id: number;
+    title: string;
+    category: string;
+    imageUrl: string;
+    description: string;
+    completedDate: string;
+    showOnHomepage: boolean;
+    isActive: boolean;
+  }
+  
+  export interface ServiceItem {
+    id: number;
+    title: string;
+    description: string;
+    image: string;
+    price: number;
+    duration: string;
+    isActive: boolean;
+    showOnHomepage: boolean;
+  }
+  
+  export interface QuizQuestion {
+    id: number;
+    question: string;
+    options: string[];
+  }
+  
+  export interface ChatMessage {
+    id: string;
+    senderId: string;
+    senderName: string;
+    message: string;
+    timestamp: string;
+    isAdmin: boolean;
+  }
+  
+  export interface ChatClient {
+    id: string;
+    name: string;
+    lastMessage: string;
+    unreadCount: number;
+    online: boolean;
+  }
