@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { TabConfig } from '@/lib/types';
+import { CustomButton } from '@/components/ui/custom-button';
 
 interface ClientTabsLayoutProps {
     tabs: TabConfig[];
@@ -26,9 +27,9 @@ export function ClientTabsLayout({ tabs, defaultTab, userName = 'Client' }: Clie
                             <h1 className="text-xl font-bold text-gray-900">Welcome, {userName}</h1>
                             <p className="text-sm text-gray-600 mt-1">Track your project and collaborate with our team</p>
                         </div>
-                        <button className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 transition-colors">
+                        <CustomButton variant="destructive" size="sm">
                             Logout
-                        </button>
+                        </CustomButton>
                     </div>
                 </div>
             </div>
@@ -44,7 +45,7 @@ export function ClientTabsLayout({ tabs, defaultTab, userName = 'Client' }: Clie
                                 className={`
                   px-6 py-2.5 text-sm font-medium whitespace-nowrap rounded-t transition-colors
                   ${activeTab === tab.id
-                                        ? 'bg-white text-gray-900 border-t-2 border-x border-gray-200 border-t-gray-900'
+                                        ? 'bg-white text-gray-900 border-t-2 border-gray-200 border-t-gray-900'
                                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                                     }
                 `}
