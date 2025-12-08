@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
+import { ImageWithFallback } from '@/components/ui/image-with-fallback';
 import Link from 'next/link';
 
 interface NavbarProps {
@@ -42,9 +42,9 @@ export function Navbar({ currentPage = 'home' }: NavbarProps) {
                         transition={{ type: 'spring', stiffness: 400, damping: 17 }}
                     >
                         <ImageWithFallback
-                           src="/images/Cema_Logo.png" 
-                           alt="Cema Logo"
-                           className="h-full w-auto object-contain"
+                            src="/images/Cema_Logo.png"
+                            alt="Cema Logo"
+                            className="h-full w-auto object-contain"
                         />
                     </motion.div>
                 </Link>
