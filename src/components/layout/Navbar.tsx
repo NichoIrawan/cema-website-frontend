@@ -42,9 +42,9 @@ export function Navbar({ currentPage = 'home' }: NavbarProps) {
                         transition={{ type: 'spring', stiffness: 400, damping: 17 }}
                     >
                         <ImageWithFallback
-                            src="https://images.unsplash.com/photo-1696658747986-6d91ea868c82?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb21wYW55JTIwbG9nbyUyMGFyY2hpdGVjdHVyZXxlbnwxfHx8fDE3NjIwNTY4OTV8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
-                            alt="Cema Logo"
-                            className="h-full w-auto object-contain"
+                           src="/images/Cema_Logo.png" 
+                           alt="Cema Logo"
+                           className="h-full w-auto object-contain"
                         />
                     </motion.div>
                 </Link>
