@@ -1,18 +1,11 @@
-import { Navbar } from '@/components/layout/Navbar';
-import { Footer } from '@/components/layout/Footer';
-import ChatWidget from '@/components/layout/ChatWidget';
-
 export default function PublicLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
     return (
-        <>
-            <Navbar />
-            <main className="min-h-screen">{children}</main>
-            <ChatWidget />
-            <Footer />
-        </>
+        <main>
+            {children}
+        </main>
     );
 }
