@@ -1,114 +1,138 @@
 'use client';
 
-import Link from 'next/link';
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
-import type { NavItem } from '@/lib/types';
+import { motion, AnimatePresence } from 'motion/react';
+import { ImageWithFallback } from '@/components/ui/image-with-fallback';
+import Link from 'next/link';
 
-const navigationItems: NavItem[] = [
-    { label: 'Beranda', href: '/' },
-    { label: 'Layanan', href: '/services' },
-    { label: 'Portofolio', href: '/portfolio' },
-    { label: 'Quiz', href: '/quiz' },
-    { label: 'Kalkulator', href: '/calculator' },
-    { label: 'Booking', href: '/booking' },
-    { label: 'Kontak', href: '/contact' },
-];
+interface NavbarProps {
+    currentPage?: string;
+}
 
-export function Navbar() {
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+export function Navbar({ currentPage = 'home' }: NavbarProps) {
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    const menuItems = [
+        { id: 'home', label: 'Home', href: '/' },
+        { id: 'portfolio', label: 'Portfolio', href: '/portfolio' },
+        { id: 'myproject', label: 'My Project', href: '/myproject' },
+        { id: 'services', label: 'Services', href: '/services' },
+        { id: 'about', label: 'About Us', href: '/about' },
+        { id: 'contact', label: 'Contact Us', href: '/contact' },
+        { id: 'login', label: 'Account', href: '/login' },
+    ];
 
     return (
-        <nav className="sticky top-0 z-50 bg-white border-b border-gray-200">
-            {/* TODO: Apply final Navbar Design here */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex items-center justify-between h-16">
-                    {/* Logo */}
-                    <div className="flex-shrink-0">
-                        <Link href="/" className="text-xl font-bold text-gray-900">
-                            PT Cipta Maharupa Abadi
-                        </Link>
-                    </div>
+        <header className="fixed left-0 top-0 w-full z-[1000]">
+            <nav
+                className="w-full px-[5vw] py-[1.11vw] flex flex-row items-center"
+                style={{
+                    boxShadow: '0 2px 8px 0 rgba(0, 0, 0, 0.15)',
+                    backdropFilter: 'blur(1.11rem)',
+                    WebkitBackdropFilter: 'blur(1.11rem)',
+                }}
+            >
+                {/* Logo */}
+                <Link href="/">
+                    <motion.div
+                        className="cursor-pointer h-16 md:h-[4vw] min-h-[3rem] max-h-[5rem]"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                    >
+                        <ImageWithFallback
+                            src="/images/Cema_Logo.png"
+                            alt="Cema Logo"
+                            className="h-full w-auto object-contain"
+                        />
+                    </motion.div>
+                </Link>
 
-                    {/* Desktop Navigation */}
-                    <div className="hidden md:flex md:items-center md:gap-8">
-                        <div className="flex gap-6">
-                            {navigationItems.map((item) => (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    className="text-gray-700 hover:text-gray-900 transition-colors"
+                {/* Desktop Navigation */}
+                <ul className="hidden md:flex flex-row gap-6 list-none ml-auto items-center">
+                    {menuItems.map((item) => (
+                        <motion.li
+                            key={item.id}
+                            className="text-[0.67rem] lg:text-[0.875rem] text-black cursor-pointer relative"
+                            whileHover={{ y: -2 }}
+                            whileTap={{ scale: 0.95 }}
+                            transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                        >
+                            <Link href={item.href}>
+                                <motion.span
+                                    className="relative inline-block"
+                                    initial={false}
+                                    animate={
+                                        currentPage === item.id
+                                            ? { color: '#000000' }
+                                            : { color: '#000000' }
+                                    }
                                 >
                                     {item.label}
+                                    {/* Animated underline */}
+                                    <motion.span
+                                        className="absolute left-0 bottom-0 w-full h-[1px] bg-black"
+                                        initial={false}
+                                        animate={
+                                            currentPage === item.id
+                                                ? { scaleX: 1, opacity: 1 }
+                                                : { scaleX: 0, opacity: 0 }
+                                        }
+                                        whileHover={{ scaleX: 1, opacity: 1 }}
+                                        transition={{ duration: 0.3, ease: 'easeInOut' }}
+                                        style={{
+                                            originX: 0,
+                                            transformOrigin: 'left',
+                                            bottom: '-0.3rem',
+                                        }}
+                                    />
+                                </motion.span>
+                            </Link>
+                        </motion.li>
+                    ))}
+                </ul>
+
+                {/* Mobile Menu Button */}
+                <button
+                    className="md:hidden ml-auto text-[#333333]"
+                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                >
+                    {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                </button>
+            </nav>
+
+            {/* Mobile Menu */}
+            <AnimatePresence>
+                {isMenuOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="md:hidden bg-white/95 border-t border-gray-200 overflow-hidden"
+                        style={{
+                            backdropFilter: 'blur(1.11rem)',
+                            WebkitBackdropFilter: 'blur(1.11rem)',
+                        }}
+                    >
+                        <div className="px-4 py-4 space-y-3">
+                            {menuItems.map((item) => (
+                                <Link key={item.id} href={item.href}>
+                                    <button
+                                        onClick={() => setIsMenuOpen(false)}
+                                        className={`block w-full text-left px-4 py-2 rounded-lg ${currentPage === item.id
+                                            ? 'bg-[#8CC55A] text-white'
+                                            : 'text-black hover:bg-[#F7F7F7]'
+                                            } transition-colors`}
+                                    >
+                                        {item.label}
+                                    </button>
                                 </Link>
                             ))}
                         </div>
-
-                        {/* Auth Buttons */}
-                        <div className="flex gap-3">
-                            <Link
-                                href="/login"
-                                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
-                            >
-                                Login
-                            </Link>
-                            <Link
-                                href="/register"
-                                className="px-4 py-2 bg-gray-900 text-white rounded hover:bg-gray-800 transition-colors"
-                            >
-                                Register
-                            </Link>
-                        </div>
-                    </div>
-
-                    {/* Mobile Menu Button */}
-                    <button
-                        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                        className="md:hidden p-2 rounded hover:bg-gray-100"
-                        aria-label="Toggle menu"
-                    >
-                        {isMobileMenuOpen ? (
-                            <X className="h-6 w-6" />
-                        ) : (
-                            <Menu className="h-6 w-6" />
-                        )}
-                    </button>
-                </div>
-            </div>
-
-            {/* Mobile Menu */}
-            {isMobileMenuOpen && (
-                <div className="md:hidden border-t border-gray-200 bg-white">
-                    <div className="px-4 py-4 space-y-3">
-                        {navigationItems.map((item) => (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                className="block py-2 text-gray-700 hover:text-gray-900"
-                                onClick={() => setIsMobileMenuOpen(false)}
-                            >
-                                {item.label}
-                            </Link>
-                        ))}
-                        <div className="pt-4 space-y-2 border-t border-gray-200">
-                            <Link
-                                href="/login"
-                                className="block w-full px-4 py-2 text-center border border-gray-300 rounded hover:bg-gray-50"
-                                onClick={() => setIsMobileMenuOpen(false)}
-                            >
-                                Login
-                            </Link>
-                            <Link
-                                href="/register"
-                                className="block w-full px-4 py-2 text-center bg-gray-900 text-white rounded hover:bg-gray-800"
-                                onClick={() => setIsMobileMenuOpen(false)}
-                            >
-                                Register
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </nav>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </header>
     );
 }
