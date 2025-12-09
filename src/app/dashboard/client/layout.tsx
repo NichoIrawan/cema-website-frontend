@@ -29,9 +29,6 @@ export default function ClientDashboardLayout({ children }: ClientDashboardLayou
                             <h1 className="text-xl font-bold text-gray-900">Welcome, {userName}</h1>
                             <p className="text-sm text-gray-600 mt-1">Track your project and collaborate with our team</p>
                         </div>
-                        <CustomButton variant="destructive" size="sm">
-                            Logout
-                        </CustomButton>
                     </div>
                 </div>
             </div>
