@@ -4,18 +4,25 @@
 
 // Navigation
 export interface NavItem {
+    id: string;
     label: string;
     href: string;
 }
 
 // User & Authentication
-export type UserRole = 'admin' | 'client' | 'guest';
+export enum UserRole {
+    ADMIN = 'admin',
+    CLIENT = 'client',
+    GUEST = 'guest'
+}
 
 export interface User {
     id: string;
     name: string;
     email: string;
     role: UserRole;
+    createdAt?: Date;
+    updatedAt?: Date;
 }
 
 // Admin Dashboard Tabs
@@ -23,6 +30,7 @@ export interface TabConfig {
     id: string;
     label: string;
     content?: React.ReactNode;
+    href?: string;
 }
 
 // Services
@@ -33,6 +41,7 @@ export interface Service {
     name: string;
     type: ServiceType;
     description: string;
+    price?: number;
 }
 
 // Projects
@@ -41,13 +50,60 @@ export type ProjectStatus = 'pending' | 'in-progress' | 'completed' | 'cancelled
 export interface Project {
     id: string;
     name: string;
+    clientId: string;
     clientName: string;
     status: ProjectStatus;
     serviceType: ServiceType;
+    startDate: Date;
+    endDate?: Date;
+    progress: number; // 0-100
+    budget?: number;
+    description?: string;
     createdAt: Date;
+    updatedAt?: Date;
+}
+
+// Schedule & Appointments
+export type ScheduleStatus = 'scheduled' | 'completed' | 'cancelled' | 'rescheduled';
+
+export interface Schedule {
+    id: string;
+    userId: string;
+    userName?: string;
+    projectId?: string;
+    date: string; // ISO date string
+    time: string; // HH:MM format
+    event: string;
+    description?: string;
+    status: ScheduleStatus;
+    createdAt?: Date;
+}
+
+// Chat & Messages
+export interface ChatMessage {
+    id: string;
+    senderId: string;
+    senderName: string;
+    senderRole: UserRole;
+    receiverId: string;
+    projectId?: string;
+    message: string;
+    timestamp: Date;
+    read: boolean;
+}
+
+export interface ChatConversation {
+    id: string;
+    participants: User[];
+    projectId?: string;
+    messages: ChatMessage[];
+    lastMessage?: ChatMessage;
+    unreadCount: number;
 }
 
 // Booking
+export type BookingStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled';
+
 export interface BookingFormData {
     name: string;
     email: string;
@@ -58,12 +114,22 @@ export interface BookingFormData {
     message?: string;
 }
 
+export interface Booking extends BookingFormData {
+    id: string;
+    userId?: string;
+    status: BookingStatus;
+    createdAt: Date;
+    updatedAt?: Date;
+    confirmedDate?: Date;
+}
+
 // Calculator
 export type MaterialQuality = 'standard' | 'premium';
 
 export interface CalculatorInput {
     area: number; // m²
     materialQuality: MaterialQuality;
+    serviceType?: ServiceType;
 }
 
 export interface CalculatorResult {
@@ -75,6 +141,21 @@ export interface CalculatorResult {
     };
 }
 
+// API Responses
+export interface ApiResponse<T> {
+    success: boolean;
+    data?: T;
+    error?: string;
+    message?: string;
+}
+
+export interface PaginatedResponse<T> {
+    data: T[];
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+}
 export interface Portfolio {
     id: number;
     title: string;
@@ -108,7 +189,7 @@ export interface Portfolio {
     senderId: string;
     senderName: string;
     message: string;
-    timestamp: string;
+    timestamp: Date;
     isAdmin: boolean;
   }
   
