@@ -4,7 +4,7 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     return (
-        <main>
+        <main className="bg-gray-50 pt-20 md:pt-24 lg:pt-[6.5vw]">
             {children}
         </main>
     )
