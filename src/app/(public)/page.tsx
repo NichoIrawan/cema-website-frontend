@@ -14,6 +14,7 @@ import {
   Check,
 } from 'lucide-react';
 import { Slider } from '../../components/ui/slider';
+import DesignQuizUser from '@/components/ui/DesignQuizUser';
 
 interface ServiceItem {
   id: number;
@@ -731,33 +732,16 @@ export default function HomePage() {
 
       {/* CTA Section - Design Quiz */}
       <section className="py-20 bg-[#F7F7F7]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-2xl mx-auto">
-            {/* Quiz CTA */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              whileHover={{ scale: 1.05 }}
-              onClick={() => onNavigate('quiz')}
-              className="bg-[#BC5D60] text-white p-12 rounded-lg cursor-pointer shadow-xl text-center"
-            >
-              <ClipboardCheck size={64} className="mx-auto mb-6" />
-              <h2 className="text-white mb-4">Tidak Yakin Gaya Desain Anda?</h2>
-              <p className="mb-8 opacity-90 text-lg">
-                Ikuti quiz interaktif kami untuk menemukan gaya desain yang sempurna sesuai kepribadian dan kebutuhan Anda
-              </p>
-              <motion.div 
-                className="inline-flex items-center gap-2 text-lg px-8 py-3 bg-white text-[#BC5D60] rounded-lg"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Mulai Quiz <ArrowRight size={24} />
-              </motion.div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-2xl mx-auto">
+        
+        {/* Panggil Komponen disini */}
+        {/* Komponen ini sudah berisi Card pemicu & Modal Quiz-nya */}
+        <DesignQuizUser />
+
+      </div>
+    </div>
+  </section>
 
       {/* Testimonials */}
       <section className="py-20 bg-[#F7F7F7]">
