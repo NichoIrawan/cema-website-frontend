@@ -68,9 +68,9 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
         },
         { 
             label: 'Design Quiz', 
-            href: '/dashboard/admin/quiz',
+            href: '/dashboard/admin/design-kuis',
             icon: <FileQuestion size={18} />,
-            activeCheck: (path: string) => path.includes('/quiz')
+            activeCheck: (path: string) => path.includes('/design-kuis')
         },
         { 
             label: 'Chat CS', 
