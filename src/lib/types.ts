@@ -165,9 +165,9 @@ export interface Portfolio {
     completedDate: string;
     showOnHomepage: boolean;
     isActive: boolean;
-  }
-  
-  export interface ServiceItem {
+}
+
+export interface ServiceItem {
     id: number;
     title: string;
     description: string;
@@ -176,27 +176,27 @@ export interface Portfolio {
     duration: string;
     isActive: boolean;
     showOnHomepage: boolean;
-  }
-  
-  export interface QuizQuestion {
+}
+
+export interface QuizQuestion {
     id: number;
     question: string;
     options: string[];
-  }
-  
-  export interface ChatMessage {
+}
+
+export interface ChatMessage {
     id: string;
     senderId: string;
     senderName: string;
     message: string;
     timestamp: Date;
     isAdmin: boolean;
-  }
-  
-  export interface ChatClient {
+}
+
+export interface ChatClient {
     id: string;
     name: string;
     lastMessage: string;
     unreadCount: number;
     online: boolean;
-  }
+}

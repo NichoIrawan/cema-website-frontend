@@ -152,7 +152,7 @@ export default function HomePage() {
     const stored = localStorage.getItem('services');
     if (stored) {
       const storedServices = JSON.parse(stored);
-      
+
       // Map to HomePage format with default icons and colors
       const serviceMap: Record<string, { icon: any; color: string; image: string }> = {
         'Desain Arsitektur': {
@@ -199,7 +199,7 @@ export default function HomePage() {
           color: '#8CC55A',
           image: 'https://images.unsplash.com/photo-1611001440648-e90aff42faa3',
         };
-        
+
         return {
           id: s.id,
           icon: defaults.icon,
@@ -212,7 +212,7 @@ export default function HomePage() {
         };
       });
     }
-    
+
     return [
       {
         id: 1,
@@ -427,12 +427,12 @@ export default function HomePage() {
                 <div className="p-6 flex flex-col flex-grow">
                   <h3 className="text-[#333333] mb-2">{service.title}</h3>
                   <p className="text-[#868686] mb-4 line-clamp-2">{service.description}</p>
-                  
+
                   {/* Price */}
                   {service.price && (
                     <div className="text-[#8CC55A] mb-4">{service.price}</div>
                   )}
-                  
+
                   {/* Features List */}
                   {service.features && service.features.length > 0 && (
                     <div className="mb-6 space-y-2 flex-grow">
@@ -594,11 +594,10 @@ export default function HomePage() {
                       <motion.button
                         key={option.value}
                         onClick={() => setServiceType(option.value)}
-                        className={`p-4 rounded-lg border-2 transition-colors ${
-                          serviceType === option.value
+                        className={`p-4 rounded-lg border-2 transition-colors ${serviceType === option.value
                             ? 'border-[#8CC55A] bg-[#8CC55A]/10'
                             : 'border-gray-200 hover:border-[#8CC55A]'
-                        }`}
+                          }`}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                       >
@@ -619,11 +618,10 @@ export default function HomePage() {
                       <motion.button
                         key={option.value}
                         onClick={() => setMaterialType(option.value)}
-                        className={`p-4 rounded-lg border-2 transition-colors ${
-                          materialType === option.value
+                        className={`p-4 rounded-lg border-2 transition-colors ${materialType === option.value
                             ? 'border-[#8CC55A] bg-[#8CC55A]/10'
                             : 'border-gray-200 hover:border-[#8CC55A]'
-                        }`}
+                          }`}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                       >
@@ -747,7 +745,7 @@ export default function HomePage() {
               <p className="mb-8 opacity-90 text-lg">
                 Ikuti quiz interaktif kami untuk menemukan gaya desain yang sempurna sesuai kepribadian dan kebutuhan Anda
               </p>
-              <motion.div 
+              <motion.div
                 className="inline-flex items-center gap-2 text-lg px-8 py-3 bg-white text-[#BC5D60] rounded-lg"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
