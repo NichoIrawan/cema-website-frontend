@@ -5,23 +5,34 @@ import { Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ImageWithFallback } from '@/components/ui/image-with-fallback';
 import Link from 'next/link';
+import { CustomButton } from '@/components/ui/custom-button';
+import { UserMenu } from '@/components/layout/user-menu';
+import type { User, NavItem } from '@/lib/types';
+import { UserRole } from '@/lib/types';
+import { usePathname } from 'next/navigation';
 
-interface NavbarProps {
-    currentPage?: string;
-}
-
-export function Navbar({ currentPage = 'home' }: NavbarProps) {
+export function Navbar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-    const menuItems = [
+    // TODO: Replace with actual auth state from context/session
+    const isLoggedIn = true; // Change this based on actual auth state
+    const user: User = {
+        id: '1',
+        name: 'Admin',
+        role: UserRole.ADMIN,
+        email: 'admin@email.com'
+    };
+
+    const menuItems: NavItem[] = [
         { id: 'home', label: 'Home', href: '/' },
         { id: 'portfolio', label: 'Portfolio', href: '/portfolio' },
-        { id: 'myproject', label: 'My Project', href: '/myproject' },
         { id: 'services', label: 'Services', href: '/services' },
         { id: 'about', label: 'About Us', href: '/about' },
         { id: 'contact', label: 'Contact Us', href: '/contact' },
-        { id: 'login', label: 'Account', href: '/login' },
     ];
+
+    const pathname = usePathname();
+    const isActive = (path: string) => pathname === path;
 
     return (
         <header className="fixed left-0 top-0 w-full z-[1000]">
@@ -64,7 +75,7 @@ export function Navbar({ currentPage = 'home' }: NavbarProps) {
                                     className="relative inline-block"
                                     initial={false}
                                     animate={
-                                        currentPage === item.id
+                                        isActive(item.href)
                                             ? { color: '#000000' }
                                             : { color: '#000000' }
                                     }
@@ -75,7 +86,7 @@ export function Navbar({ currentPage = 'home' }: NavbarProps) {
                                         className="absolute left-0 bottom-0 w-full h-[1px] bg-black"
                                         initial={false}
                                         animate={
-                                            currentPage === item.id
+                                            isActive(item.href)
                                                 ? { scaleX: 1, opacity: 1 }
                                                 : { scaleX: 0, opacity: 0 }
                                         }
@@ -91,6 +102,19 @@ export function Navbar({ currentPage = 'home' }: NavbarProps) {
                             </Link>
                         </motion.li>
                     ))}
+
+                    {/* Auth Section */}
+                    <li className="ml-4">
+                        {isLoggedIn ? (
+                            <UserMenu user={user} />
+                        ) : (
+                            <Link href="/login">
+                                <CustomButton variant="default" size="sm">
+                                    Login
+                                </CustomButton>
+                            </Link>
+                        )}
+                    </li>
                 </ul>
 
                 {/* Mobile Menu Button */}
@@ -120,7 +144,7 @@ export function Navbar({ currentPage = 'home' }: NavbarProps) {
                                 <Link key={item.id} href={item.href}>
                                     <button
                                         onClick={() => setIsMenuOpen(false)}
-                                        className={`block w-full text-left px-4 py-2 rounded-lg ${currentPage === item.id
+                                        className={`block w-full text-left px-4 py-2 rounded-lg ${isActive(item.href)
                                             ? 'bg-[#8CC55A] text-white'
                                             : 'text-black hover:bg-[#F7F7F7]'
                                             } transition-colors`}
@@ -129,6 +153,32 @@ export function Navbar({ currentPage = 'home' }: NavbarProps) {
                                     </button>
                                 </Link>
                             ))}
+
+                            {/* Mobile Auth Section */}
+                            <div className="pt-4 border-t border-gray-200">
+                                {isLoggedIn ? (
+                                    <div className="space-y-2">
+                                        <div className="px-4 py-2">
+                                            <p className="font-medium text-gray-900">{user.name}</p>
+                                            <p className="text-sm text-gray-600">{user.role}</p>
+                                        </div>
+                                        <Link href="/dashboard">
+                                            <button className="block w-full text-left px-4 py-2 rounded-lg text-black hover:bg-[#F7F7F7] transition-colors">
+                                                Dashboard
+                                            </button>
+                                        </Link>
+                                        <CustomButton variant="destructive" size="sm" className="w-full">
+                                            Logout
+                                        </CustomButton>
+                                    </div>
+                                ) : (
+                                    <Link href="/login">
+                                        <CustomButton variant="default" size="sm" className="w-full">
+                                            Login
+                                        </CustomButton>
+                                    </Link>
+                                )}
+                            </div>
                         </div>
                     </motion.div>
                 )}
