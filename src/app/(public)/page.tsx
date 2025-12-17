@@ -106,12 +106,9 @@ export default function HomePage() {
     const stored = localStorage.getItem('portfolios');
     if (stored) {
       const portfolios = JSON.parse(stored);
-      // Filter portfolios marked to show on homepage and are active, limit to 4
       const featuredPortfolios = portfolios.filter((p: any) => p.showOnHomepage && p.isActive !== false);
-      // If no featured items, fall back to first 4 active items
       const activePortfolios = portfolios.filter((p: any) => p.isActive !== false);
       const itemsToShow = featuredPortfolios.length > 0 ? featuredPortfolios : activePortfolios;
-      // Map to HomePage format
       return itemsToShow.slice(0, 4).map((p: any): PortfolioItem => ({
         id: p.id,
         title: p.title,
@@ -147,14 +144,11 @@ export default function HomePage() {
     ];
   };
 
-  // Get services from localStorage
   const getServices = (): ServiceItem[] => {
     if (typeof window === 'undefined') return [];
     const stored = localStorage.getItem('services');
     if (stored) {
       const storedServices = JSON.parse(stored);
-
-      // Map to HomePage format with default icons and colors
       const serviceMap: Record<string, { icon: any; color: string; image: string }> = {
         'Desain Arsitektur': {
           icon: Building2,
@@ -188,9 +182,7 @@ export default function HomePage() {
         },
       };
 
-      // Filter services marked to show on homepage and are active, limit to 3
       const featuredServices = storedServices.filter((s: any) => s.showOnHomepage && s.isActive);
-      // If no featured items, fall back to first 3 active items
       const activeServices = storedServices.filter((s: any) => s.isActive);
       const itemsToShow = featuredServices.length > 0 ? featuredServices : activeServices;
 
@@ -578,6 +570,7 @@ export default function HomePage() {
                       step={10}
                       className="flex-1"
                     />
+                    
                     <div className="w-24 text-center">
                       <span className="text-[#333333]">{area[0]} m²</span>
                     </div>

@@ -342,21 +342,21 @@ export default function PortfolioPage({ onNavigate }: PortfolioPageProps) {
 
       {/* Portfolio Detail Dialog */}
       <Dialog open={!!selectedPortfolio} onOpenChange={() => setSelectedPortfolio(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl p-8 mt-12">
           {selectedPortfolio && (
             <>
               <DialogHeader>
                 <DialogTitle className="text-2xl text-[#333333]">
                   {selectedPortfolio.title}
                 </DialogTitle>
-                <DialogDescription>
+                <DialogDescription className="text-[#868686]">
                   Detail lengkap portfolio proyek
                 </DialogDescription>
               </DialogHeader>
               
               <div className="space-y-6">
                 {/* Image */}
-                <div className="relative h-96 rounded-lg overflow-hidden">
+                <div className="relative h-64 rounded-lg overflow-hidden">
                   <ImageWithFallback
                     src={selectedPortfolio.imageUrl}
                     alt={selectedPortfolio.title}
@@ -406,7 +406,7 @@ export default function PortfolioPage({ onNavigate }: PortfolioPageProps) {
                       onNavigate('contact');
                     }}
                     variant="outline"
-                    className="flex-1 border-[#8CC55A] text-[#8CC55A] hover:bg-[#8CC55A]/10"
+                    className="flex-1 border-[#8CC55A] text-[#8CC55A] hover:bg-[#8CC55A]/10 bg-white"
                   >
                     Hubungi Kami
                   </Button>
