@@ -15,7 +15,7 @@ export default function PublicLayout({
                 {children}
             </main>
             <ChatWidget />
-            <Footer />
+            {/* <Footer /> */}
         </>
     );
 }
