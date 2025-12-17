@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { TabConfig } from '@/lib/types';
+import { CustomButton } from '@/components/ui/custom-button';
 
 interface AdminTabsLayoutProps {
     tabs: TabConfig[];
@@ -25,9 +26,9 @@ export function AdminTabsLayout({ tabs, defaultTab }: AdminTabsLayoutProps) {
                             <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
                             <p className="text-gray-600 mt-1">Manage your projects and services</p>
                         </div>
-                        <button className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors">
+                        <CustomButton variant="destructive" size="sm">
                             Logout
-                        </button>
+                        </CustomButton>
                     </div>
                 </div>
             </div>

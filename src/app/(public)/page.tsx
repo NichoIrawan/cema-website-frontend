@@ -14,6 +14,7 @@ import {
   Check,
 } from 'lucide-react';
 import { Slider } from '../../components/ui/slider';
+import DesignQuizUser from '@/components/ui/DesignQuizUser';
 
 interface ServiceItem {
   id: number;
@@ -152,7 +153,7 @@ export default function HomePage() {
     const stored = localStorage.getItem('services');
     if (stored) {
       const storedServices = JSON.parse(stored);
-      
+
       // Map to HomePage format with default icons and colors
       const serviceMap: Record<string, { icon: any; color: string; image: string }> = {
         'Desain Arsitektur': {
@@ -199,7 +200,7 @@ export default function HomePage() {
           color: '#8CC55A',
           image: 'https://images.unsplash.com/photo-1611001440648-e90aff42faa3',
         };
-        
+
         return {
           id: s.id,
           icon: defaults.icon,
@@ -212,7 +213,7 @@ export default function HomePage() {
         };
       });
     }
-    
+
     return [
       {
         id: 1,
@@ -427,12 +428,12 @@ export default function HomePage() {
                 <div className="p-6 flex flex-col flex-grow">
                   <h3 className="text-[#333333] mb-2">{service.title}</h3>
                   <p className="text-[#868686] mb-4 line-clamp-2">{service.description}</p>
-                  
+
                   {/* Price */}
                   {service.price && (
                     <div className="text-[#8CC55A] mb-4">{service.price}</div>
                   )}
-                  
+
                   {/* Features List */}
                   {service.features && service.features.length > 0 && (
                     <div className="mb-6 space-y-2 flex-grow">
@@ -594,11 +595,10 @@ export default function HomePage() {
                       <motion.button
                         key={option.value}
                         onClick={() => setServiceType(option.value)}
-                        className={`p-4 rounded-lg border-2 transition-colors ${
-                          serviceType === option.value
+                        className={`p-4 rounded-lg border-2 transition-colors ${serviceType === option.value
                             ? 'border-[#8CC55A] bg-[#8CC55A]/10'
                             : 'border-gray-200 hover:border-[#8CC55A]'
-                        }`}
+                          }`}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                       >
@@ -619,11 +619,10 @@ export default function HomePage() {
                       <motion.button
                         key={option.value}
                         onClick={() => setMaterialType(option.value)}
-                        className={`p-4 rounded-lg border-2 transition-colors ${
-                          materialType === option.value
+                        className={`p-4 rounded-lg border-2 transition-colors ${materialType === option.value
                             ? 'border-[#8CC55A] bg-[#8CC55A]/10'
                             : 'border-gray-200 hover:border-[#8CC55A]'
-                        }`}
+                          }`}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                       >
@@ -731,33 +730,16 @@ export default function HomePage() {
 
       {/* CTA Section - Design Quiz */}
       <section className="py-20 bg-[#F7F7F7]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-2xl mx-auto">
-            {/* Quiz CTA */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              whileHover={{ scale: 1.05 }}
-              onClick={() => onNavigate('quiz')}
-              className="bg-[#BC5D60] text-white p-12 rounded-lg cursor-pointer shadow-xl text-center"
-            >
-              <ClipboardCheck size={64} className="mx-auto mb-6" />
-              <h2 className="text-white mb-4">Tidak Yakin Gaya Desain Anda?</h2>
-              <p className="mb-8 opacity-90 text-lg">
-                Ikuti quiz interaktif kami untuk menemukan gaya desain yang sempurna sesuai kepribadian dan kebutuhan Anda
-              </p>
-              <motion.div 
-                className="inline-flex items-center gap-2 text-lg px-8 py-3 bg-white text-[#BC5D60] rounded-lg"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Mulai Quiz <ArrowRight size={24} />
-              </motion.div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-2xl mx-auto">
+        
+        {/* Panggil Komponen disini */}
+        {/* Komponen ini sudah berisi Card pemicu & Modal Quiz-nya */}
+        <DesignQuizUser />
+
+      </div>
+    </div>
+  </section>
 
       {/* Testimonials */}
       <section className="py-20 bg-[#F7F7F7]">
