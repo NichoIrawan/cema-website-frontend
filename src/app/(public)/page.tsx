@@ -769,12 +769,13 @@ export default function HomePage() {
 
       {/* CTA Section - Design Quiz */}
       <section className="py-20 bg-[#F7F7F7]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-2xl mx-auto">
-            <DesignQuizUser />
-          </div>
-        </div>
-      </section>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-2xl mx-auto">
+        <DesignQuizUser />
+
+      </div>
+    </div>
+  </section>
 
       {/* Testimonials */}
       <section className="py-20 bg-[#F7F7F7]">
