@@ -16,6 +16,21 @@ import {
 import { Slider } from '../../components/ui/slider';
 import DesignQuizUser from '@/components/ui/DesignQuizUser';
 
+// --- 1. Tambahkan Interface Settings agar Typescript paham struktur data Admin ---
+interface CalculatorSettings {
+  services: {
+    interior: number;
+    architecture: number;
+    renovation: number;
+  };
+  materials: {
+    standard: number;
+    premium: number;
+    luxury: number;
+  };
+  roomPrice: number;
+}
+
 interface ServiceItem {
   id: number;
   icon: React.ComponentType<any>;
@@ -35,15 +50,13 @@ interface PortfolioItem {
 }
 
 interface ServiceOption {
-  value: string;
+  value: 'interior' | 'architecture' | 'renovation'; // Diperketat tipenya
   label: string;
-  multiplier: number;
 }
 
 interface MaterialOption {
-  value: string;
+  value: 'standard' | 'premium' | 'luxury'; // Diperketat tipenya
   label: string;
-  multiplier: number;
 }
 
 interface Stat {
@@ -58,33 +71,72 @@ export default function HomePage() {
 
   // Calculator state
   const [area, setArea] = useState([100]);
-  const [serviceType, setServiceType] = useState('interior');
-  const [materialType, setMaterialType] = useState('standard');
+  const [serviceType, setServiceType] = useState<'interior' | 'architecture' | 'renovation'>('interior');
+  const [materialType, setMaterialType] = useState<'standard' | 'premium' | 'luxury'>('standard');
   const [roomCount, setRoomCount] = useState([3]);
   const [showResult, setShowResult] = useState(false);
 
+  // --- 2. State untuk menyimpan Settingan dari Admin ---
+  const [settings, setSettings] = useState<CalculatorSettings>({
+    services: {
+      interior: 2500000,
+      architecture: 1500000,
+      renovation: 3000000
+    },
+    materials: {
+      standard: 1.0,
+      premium: 1.4,
+      luxury: 1.8
+    },
+    roomPrice: 2000000
+  });
+
+  // --- 3. Load Settings dari LocalStorage (Bagian yang sebelumnya hilang) ---
+  useEffect(() => {
+    // Load Portfolios & Services (Existing code)
+    setPortfolioItems(getPortfolios());
+    setServices(getServices());
+
+    // Load Calculator Settings (NEW CODE)
+    const storedCalc = localStorage.getItem("calculatorSettings");
+    if (storedCalc) {
+      try {
+        const parsedData = JSON.parse(storedCalc);
+        setSettings(prev => ({
+          ...prev,
+          ...parsedData,
+          services: { ...prev.services, ...parsedData.services },
+          materials: { ...prev.materials, ...parsedData.materials },
+          roomPrice: parsedData.roomPrice ?? prev.roomPrice
+        }));
+      } catch (e) {
+        console.error("Gagal load setting kalkulator", e);
+      }
+    }
+  }, []);
+
   const serviceOptions: ServiceOption[] = [
-    { value: 'interior', label: 'Desain Interior', multiplier: 1 },
-    { value: 'architecture', label: 'Arsitektur', multiplier: 1.5 },
-    { value: 'renovation', label: 'Renovasi', multiplier: 1.2 },
+    { value: 'interior', label: 'Desain Interior' },
+    { value: 'architecture', label: 'Arsitektur' },
+    { value: 'renovation', label: 'Renovasi' },
   ];
 
   const materialOptions: MaterialOption[] = [
-    { value: 'standard', label: 'Standard', multiplier: 1 },
-    { value: 'premium', label: 'Premium', multiplier: 1.5 },
-    { value: 'luxury', label: 'Luxury', multiplier: 2 },
+    { value: 'standard', label: 'Standard' },
+    { value: 'premium', label: 'Premium' },
+    { value: 'luxury', label: 'Luxury' },
   ];
 
+  // --- 4. Update Rumus agar sesuai dengan Admin Panel ---
   const calculateEstimate = () => {
-    const basePrice = 2500000; // IDR per m²
-    const service = serviceOptions.find((s) => s.value === serviceType);
-    const material = materialOptions.find((m) => m.value === materialType);
+    // Ambil harga dari state 'settings' yang sudah di-load dari localStorage
+    const hargaDasarPerMeter = settings.services[serviceType];
+    const multiplierMaterial = settings.materials[materialType];
+    const biayaRuangan = settings.roomPrice * roomCount[0];
 
-    const serviceMult = service?.multiplier || 1;
-    const materialMult = material?.multiplier || 1;
-    const roomMult = 1 + (roomCount[0] - 3) * 0.1;
-
-    const total = basePrice * area[0] * serviceMult * materialMult * roomMult;
+    // Rumus: (Luas * HargaLayanan * Multiplier) + (Biaya Ruangan)
+    const total = (area[0] * hargaDasarPerMeter * multiplierMaterial) + biayaRuangan;
+    
     return total;
   };
 
@@ -92,7 +144,7 @@ export default function HomePage() {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
-      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(value);
   };
 
@@ -272,12 +324,6 @@ export default function HomePage() {
 
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
   const [services, setServices] = useState<ServiceItem[]>([]);
-
-  // Initialize data on client side only
-  useEffect(() => {
-    setPortfolioItems(getPortfolios());
-    setServices(getServices());
-  }, []);
 
   return (
     <div className="min-h-screen">
@@ -530,209 +576,205 @@ export default function HomePage() {
 
       {/* Calculator Section */}
       <section className="py-20 bg-white" id="calculator">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-12"
+        >
+          <Calculator size={64} className="mx-auto mb-4 text-[#8CC55A]" />
+          <h2 className="text-[#333333] mb-4">Kalkulator Estimasi Biaya</h2>
+          <p className="text-[#868686] max-w-2xl mx-auto">
+            Hitung perkiraan biaya proyek desain Anda dengan mudah
+          </p>
+        </motion.div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Calculator Form */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-12"
+            className="lg:col-span-2 bg-[#F7F7F7] rounded-lg shadow-lg p-8"
           >
-            <Calculator size={64} className="mx-auto mb-4 text-[#8CC55A]" />
-            <h2 className="text-[#333333] mb-4">Kalkulator Estimasi Biaya</h2>
-            <p className="text-[#868686] max-w-2xl mx-auto">
-              Hitung perkiraan biaya proyek desain Anda dengan mudah
-            </p>
-          </motion.div>
+            <h3 className="text-[#333333] mb-6">Input Detail Proyek</h3>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Calculator Form */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="lg:col-span-2 bg-[#F7F7F7] rounded-lg shadow-lg p-8"
-            >
-              <h3 className="text-[#333333] mb-6">Input Detail Proyek</h3>
-
-              <div className="space-y-8">
-                {/* Building Area */}
-                <div>
-                  <label className="block text-[#333333] mb-2">
-                    <Home className="inline mr-2" size={18} />
-                    Luas Bangunan
-                  </label>
-                  <div className="flex items-center gap-4">
-                    <Slider
-                      value={area}
-                      onValueChange={setArea}
-                      min={20}
-                      max={500}
-                      step={10}
-                      className="flex-1"
-                    />
-                    
-                    <div className="w-24 text-center">
-                      <span className="text-[#333333]">{area[0]} m²</span>
-                    </div>
+            <div className="space-y-8">
+              {/* Building Area */}
+              <div>
+                <label className="block text-[#333333] mb-2">
+                  <Home className="inline mr-2" size={18} />
+                  Luas Bangunan
+                </label>
+                <div className="flex items-center gap-4">
+                  <Slider
+                    value={area}
+                    onValueChange={setArea}
+                    min={20}
+                    max={500}
+                    step={10}
+                    className="flex-1"
+                  />
+                  
+                  <div className="w-24 text-center">
+                    <span className="text-[#333333]">{area[0]} m²</span>
                   </div>
                 </div>
-
-                {/* Service Type */}
-                <div>
-                  <label className="block text-[#333333] mb-2">
-                    <Sparkles className="inline mr-2" size={18} />
-                    Jenis Layanan
-                  </label>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    {serviceOptions.map((option: ServiceOption) => (
-                      <motion.button
-                        key={option.value}
-                        onClick={() => setServiceType(option.value)}
-                        className={`p-4 rounded-lg border-2 transition-colors ${serviceType === option.value
-                            ? 'border-[#8CC55A] bg-[#8CC55A]/10'
-                            : 'border-gray-200 hover:border-[#8CC55A]'
-                          }`}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        <div className="text-[#333333]">{option.label}</div>
-                      </motion.button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Material Type */}
-                <div>
-                  <label className="block text-[#333333] mb-2">
-                    <Sparkles className="inline mr-2" size={18} />
-                    Kualitas Material
-                  </label>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    {materialOptions.map((option: MaterialOption) => (
-                      <motion.button
-                        key={option.value}
-                        onClick={() => setMaterialType(option.value)}
-                        className={`p-4 rounded-lg border-2 transition-colors ${materialType === option.value
-                            ? 'border-[#8CC55A] bg-[#8CC55A]/10'
-                            : 'border-gray-200 hover:border-[#8CC55A]'
-                          }`}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        <div className="text-[#333333]">{option.label}</div>
-                      </motion.button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Room Count */}
-                <div>
-                  <label className="block text-[#333333] mb-2">
-                    Jumlah Ruangan
-                  </label>
-                  <div className="flex items-center gap-4">
-                    <Slider
-                      value={roomCount}
-                      onValueChange={setRoomCount}
-                      min={1}
-                      max={10}
-                      step={1}
-                      className="flex-1"
-                    />
-                    <div className="w-24 text-center">
-                      <span className="text-[#333333]">{roomCount[0]} ruangan</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Calculate Button */}
-                <motion.button
-                  onClick={handleCalculate}
-                  className="w-full bg-[#8CC55A] text-white py-3 rounded-lg hover:bg-[#7AB84A] transition-colors flex items-center justify-center gap-2"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <Calculator size={20} />
-                  Hitung Estimasi
-                </motion.button>
               </div>
-            </motion.div>
 
-            {/* Result Section */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="space-y-6"
-            >
-              {/* Estimate Result */}
-              <div className="bg-white rounded-lg shadow-lg p-6">
-                <h4 className="text-[#333333] mb-4">
-                  <DollarSign className="inline mr-2" size={20} />
-                  Estimasi Biaya
-                </h4>
-                {showResult ? (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="space-y-4"
-                  >
-                    <div className="p-6 bg-[#8CC55A] rounded-lg text-white text-center">
-                      <div className="mb-2">Total Estimasi</div>
-                      <div className="text-2xl">{formatCurrency(calculateEstimate())}</div>
-                    </div>
-                    <div className="text-[#868686]">
-                      <p className="mb-2">Rincian:</p>
-                      <ul className="space-y-1">
-                        <li>• Luas: {area[0]} m²</li>
-                        <li>• Layanan: {serviceOptions.find((s) => s.value === serviceType)?.label}</li>
-                        <li>• Material: {materialOptions.find((m) => m.value === materialType)?.label}</li>
-                        <li>• Ruangan: {roomCount[0]} ruangan</li>
-                      </ul>
-                    </div>
+              {/* Service Type */}
+              <div>
+                <label className="block text-[#333333] mb-2">
+                  <Sparkles className="inline mr-2" size={18} />
+                  Jenis Layanan
+                </label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {serviceOptions.map((option) => (
                     <motion.button
-                      onClick={() => onNavigate('booking')}
-                      className="w-full bg-[#E2B546] text-white py-2 rounded-lg hover:bg-[#D1A435] transition-colors"
+                      key={option.value}
+                      onClick={() => setServiceType(option.value as any)}
+                      className={`p-4 rounded-lg border-2 transition-colors ${serviceType === option.value
+                          ? 'border-[#8CC55A] bg-[#8CC55A]/10'
+                          : 'border-gray-200 hover:border-[#8CC55A]'
+                        }`}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      Booking Konsultasi
+                      <div className="text-[#333333]">{option.label}</div>
                     </motion.button>
-                  </motion.div>
-                ) : (
-                  <div className="text-center text-[#868686] py-8">
-                    <Calculator size={48} className="mx-auto mb-4 opacity-30" />
-                    <p>Isi form dan klik "Hitung Estimasi"</p>
-                  </div>
-                )}
+                  ))}
+                </div>
               </div>
 
-              {/* Info Box */}
-              <div className="bg-[#E2B546]/10 border border-[#E2B546] rounded-lg p-6">
-                <div className="text-[#E2B546] mb-3">💡 Catatan</div>
-                <ul className="space-y-2 text-[#868686]">
-                  <li>• Estimasi ini adalah perkiraan kasar</li>
-                  <li>• Harga final dapat berbeda</li>
-                  <li>• Konsultasi gratis untuk detail lebih lanjut</li>
-                </ul>
+              {/* Material Type */}
+              <div>
+                <label className="block text-[#333333] mb-2">
+                  <Sparkles className="inline mr-2" size={18} />
+                  Kualitas Material
+                </label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {materialOptions.map((option) => (
+                    <motion.button
+                      key={option.value}
+                      onClick={() => setMaterialType(option.value as any)}
+                      className={`p-4 rounded-lg border-2 transition-colors ${materialType === option.value
+                          ? 'border-[#8CC55A] bg-[#8CC55A]/10'
+                          : 'border-gray-200 hover:border-[#8CC55A]'
+                        }`}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <div className="text-[#333333]">{option.label}</div>
+                    </motion.button>
+                  ))}
+                </div>
               </div>
-            </motion.div>
-          </div>
+
+              {/* Room Count */}
+              <div>
+                <label className="block text-[#333333] mb-2">
+                  Jumlah Ruangan
+                </label>
+                <div className="flex items-center gap-4">
+                  <Slider
+                    value={roomCount}
+                    onValueChange={setRoomCount}
+                    min={1}
+                    max={10}
+                    step={1}
+                    className="flex-1"
+                  />
+                  <div className="w-24 text-center">
+                    <span className="text-[#333333]">{roomCount[0]} ruangan</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Calculate Button */}
+              <motion.button
+                onClick={handleCalculate}
+                className="w-full bg-[#8CC55A] text-white py-3 rounded-lg hover:bg-[#7AB84A] transition-colors flex items-center justify-center gap-2"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Calculator size={20} />
+                Hitung Estimasi
+              </motion.button>
+            </div>
+          </motion.div>
+
+          {/* Result Section */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            className="space-y-6"
+          >
+            {/* Estimate Result */}
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <h4 className="text-[#333333] mb-4">
+                <DollarSign className="inline mr-2" size={20} />
+                Estimasi Biaya
+              </h4>
+              {showResult ? (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="space-y-4"
+                >
+                  <div className="p-6 bg-[#8CC55A] rounded-lg text-white text-center">
+                    <div className="mb-2">Total Estimasi</div>
+                    <div className="text-2xl font-bold">{formatCurrency(calculateEstimate())}</div>
+                  </div>
+                  <div className="text-[#868686]">
+                    <p className="mb-2">Rincian:</p>
+                    <ul className="space-y-1 text-sm">
+                      <li>• Luas: {area[0]} m²</li>
+                      <li>• Layanan: {serviceOptions.find((s) => s.value === serviceType)?.label}</li>
+                      <li>• Material: {materialOptions.find((m) => m.value === materialType)?.label}</li>
+                      <li>• Ruangan: {roomCount[0]} ruangan</li>
+                    </ul>
+                  </div>
+                  <motion.button
+                    onClick={() => onNavigate('booking')}
+                    className="w-full bg-[#E2B546] text-white py-2 rounded-lg hover:bg-[#D1A435] transition-colors font-medium"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    Booking Konsultasi
+                  </motion.button>
+                </motion.div>
+              ) : (
+                <div className="text-center text-[#868686] py-8">
+                  <Calculator size={48} className="mx-auto mb-4 opacity-30" />
+                  <p>Isi form dan klik "Hitung Estimasi"</p>
+                </div>
+              )}
+            </div>
+
+            {/* Info Box */}
+            <div className="bg-[#E2B546]/10 border border-[#E2B546] rounded-lg p-6">
+              <div className="text-[#E2B546] mb-3 font-medium">💡 Catatan</div>
+              <ul className="space-y-2 text-[#868686] text-sm">
+                <li>• Estimasi ini adalah perkiraan kasar</li>
+                <li>• Harga final dapat berbeda</li>
+                <li>• Konsultasi gratis untuk detail lebih lanjut</li>
+              </ul>
+            </div>
+          </motion.div>
         </div>
-      </section>
+      </div>
+    </section>
 
       {/* CTA Section - Design Quiz */}
       <section className="py-20 bg-[#F7F7F7]">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl mx-auto">
-        
-        {/* Panggil Komponen disini */}
-        {/* Komponen ini sudah berisi Card pemicu & Modal Quiz-nya */}
-        <DesignQuizUser />
-
-      </div>
-    </div>
-  </section>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-2xl mx-auto">
+            <DesignQuizUser />
+          </div>
+        </div>
+      </section>
 
       {/* Testimonials */}
       <section className="py-20 bg-[#F7F7F7]">
