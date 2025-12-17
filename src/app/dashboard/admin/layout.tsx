@@ -86,7 +86,7 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
             
             
             <header className="bg-gray-900 text-white border-b border-gray-800 w-full">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="max-w-7xl mx-auto px-10 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-16">
                         <div className="flex items-center gap-3">
                             <div className="bg-blue-600 p-1.5 rounded-lg">
