@@ -5,7 +5,7 @@ import { db } from '@/lib/firebase';
 import { ref, onValue, push, update, remove, serverTimestamp } from 'firebase/database';
 import type { ChatClient, ChatMessage } from '@/lib/types';
 
-// PERUBAHAN DI SINI: Tambahkan 'default' dan ganti nama jadi CSChatPage (opsional tapi rapi)
+
 export default function CSChatPage() {
     const [clients, setClients] = useState<ChatClient[]>([]);
     const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
@@ -13,7 +13,7 @@ export default function CSChatPage() {
     const [inputText, setInputText] = useState("");
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // 1. Listen ke Daftar Chat (Sidebar)
+    
     useEffect(() => {
         // Pastikan 'db' sudah terinisialisasi di lib/firebase.ts
         const chatsRef = ref(db, 'chats');
@@ -56,11 +56,23 @@ export default function CSChatPage() {
                     const m = msgsData[key];
                     loadedMessages.push({
                         id: key,
-                        senderId: m.sender === 'user' ? selectedClientId : 'admin',
+                        senderId: m.sender === 'user' ? (selectedClientId as string) : 'admin',
                         senderName: m.sender === 'user' ? 'Client' : 'Admin',
-                        message: m.text,
-                        timestamp: m.time || new Date(m.timestamp).toLocaleTimeString(),
-                        isAdmin: m.sender === 'agent'
+                        
+                        
+                        senderRole: (m.sender === 'user' ? 'USER' : 'ADMIN') as any, 
+                        
+                        receiverId: m.sender === 'user' ? 'admin' : (selectedClientId as string),
+                        
+                        message: m.text || "",
+                        
+                       
+                        timestamp: m.timestamp ? new Date(m.timestamp) : new Date(),
+                        
+                        isAdmin: m.sender === 'agent',
+                        read: m.read || false,
+                        
+                        
                     });
                 });
             }
@@ -139,7 +151,7 @@ export default function CSChatPage() {
                                 <div key={msg.id} className={`flex ${msg.isAdmin ? 'justify-end' : 'justify-start'}`}>
                                     <div className={`max-w-[70%] rounded-lg p-3 ${msg.isAdmin ? 'bg-blue-600 text-white' : 'bg-white border border-gray-200 text-gray-800'}`}>
                                         <p className="text-sm">{msg.message}</p>
-                                        <p className={`text-[10px] mt-1 ${msg.isAdmin ? 'text-blue-200' : 'text-gray-400'}`}>{msg.timestamp}</p>
+                                        <p className={`text-[10px] mt-1 ${msg.isAdmin ? 'text-blue-200' : 'text-gray-400'}`}>{msg.timestamp.toString()}</p>
                                     </div>
                                 </div>
                             ))}
