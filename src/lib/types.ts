@@ -89,8 +89,13 @@ export interface ChatMessage {
     projectId?: string;
     message: string;
     timestamp: Date;
+    isAdmin: boolean;
+   
+
     read: boolean;
 }
+
+
 
 export interface ChatConversation {
     id: string;

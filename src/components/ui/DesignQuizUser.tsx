@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { ClipboardList, X, Heart, ThumbsDown, ArrowRight, User, Lock, Mail, ClipboardCheck } from 'lucide-react';
-import { motion } from 'framer-motion'; // <--- JANGAN LUPA IMPORT INI
+import { motion } from 'framer-motion'; 
 
 // --- TIPE DATA (Sama dengan Admin) ---
 interface DesignStyle {
@@ -58,7 +58,7 @@ export default function DesignQuizUser() {
         const currentQ = questions[currentQIndex];
 
         if (liked) {
-            // Jika user SUKA, tambahkan skor ke style terkait
+            
             const styleId = currentQ.relatedStyleId;
             setScores(prev => ({
                 ...prev,
@@ -193,7 +193,7 @@ export default function DesignQuizUser() {
                                 {/* Confetti Effect */}
                                 <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500" />
                                 
-                                <span className="text-blue-600 font-bold tracking-wider text-sm uppercase mb-2">Hasil Analisa AI</span>
+                                <span className="text-[#8cc55a] font-bold tracking-wider text-sm uppercase mb-2">Hasil Analisa AI</span>
                                 <h2 className="text-4xl font-extrabold text-gray-800 mb-4">
                                     {winnerStyle.name}
                                 </h2>
@@ -211,7 +211,7 @@ export default function DesignQuizUser() {
                                     </p>
                                     <button 
                                         onClick={() => setStep('auth')}
-                                        className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors shadow-blue-200 shadow-lg"
+                                        className="w-full bg-[#8cc55a] text-white py-3 rounded-lg font-bold hover:bg-[#588C1C] transition-colors shadow-blue-200 shadow-lg"
                                     >
                                         Simpan Preferensi & Daftar
                                     </button>
@@ -227,7 +227,7 @@ export default function DesignQuizUser() {
                         {step === 'auth' && (
                             <div className="w-full h-full flex">
                                 {/* Kiri: Info */}
-                                <div className="hidden md:flex w-1/2 bg-blue-600 text-white p-10 flex-col justify-center">
+                                <div className="hidden md:flex w-1/2 bg-[#8cc55a] text-white p-10 flex-col justify-center">
                                     <h3 className="text-3xl font-bold mb-4">Satu Langkah Lagi!</h3>
                                     <p className="opacity-90 mb-8">
                                         Buat akun untuk menyimpan hasil kuis gaya <strong>{winnerStyle?.name}</strong> Anda. Ini akan sangat membantu tim desainer kami.
@@ -268,13 +268,13 @@ export default function DesignQuizUser() {
                                             </div>
                                         </div>
 
-                                        <button type="submit" className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors mt-4">
+                                        <button type="submit" className="w-full bg-[#8cc55a] text-white py-3 rounded-lg font-bold hover:bg-[#588C1C] transition-colors mt-4">
                                             Daftar & Simpan Hasil
                                         </button>
                                     </form>
 
                                     <p className="text-center text-sm text-gray-500 mt-6">
-                                        Sudah punya akun? <a href="#" className="text-blue-600 font-bold hover:underline">Login disini</a>
+                                        Sudah punya akun? <a href="/login" className="text-[#8cc55a] font-bold hover:underline">Login disini</a>
                                     </p>
                                 </div>
                             </div>
