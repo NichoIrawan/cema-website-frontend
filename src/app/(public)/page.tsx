@@ -725,9 +725,6 @@ export default function HomePage() {
       <section className="py-20 bg-[#F7F7F7]">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="max-w-2xl mx-auto">
-        
-        {/* Panggil Komponen disini */}
-        {/* Komponen ini sudah berisi Card pemicu & Modal Quiz-nya */}
         <DesignQuizUser />
 
       </div>

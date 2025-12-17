@@ -10,12 +10,9 @@ export default function PublicLayout({
     
     return (
         <>
-            <Navbar />
             <main className="min-h-screen">
                 {children}
             </main>
-            <ChatWidget />
-            <Footer />
         </>
     );
 }

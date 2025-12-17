@@ -63,21 +63,21 @@ export function Footer() {
                                 className="p-2 border border-gray-300 rounded hover:bg-gray-200 transition-colors"
                                 aria-label="Facebook"
                             >
-                                <Facebook className="h-5 w-5" />
+                                <Facebook className="h-5 w-5 text-[#000000]" />
                             </a>
                             <a
                                 href="#"
                                 className="p-2 border border-gray-300 rounded hover:bg-gray-200 transition-colors"
                                 aria-label="Instagram"
                             >
-                                <Instagram className="h-5 w-5" />
+                                <Instagram className="h-5 w-5 text-[#000000]" />
                             </a>
                             <a
                                 href="#"
                                 className="p-2 border border-gray-300 rounded hover:bg-gray-200 transition-colors"
                                 aria-label="LinkedIn"
                             >
-                                <Linkedin className="h-5 w-5" />
+                                <Linkedin className="h-5 w-5 text-[#000000]" />
                             </a>
                         </div>
                     </div>
