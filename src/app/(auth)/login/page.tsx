@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { redirect, useRouter } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
 import './login.css';
 
@@ -10,39 +10,47 @@ export default function LoginPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({ email: '', password: '' });
-  const [isLoading, setIsLoading] = useState(false); // Opsional: untuk loading state
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
 
     try {
-      
-      // Simulasi sukses sementara (Hapus ini jika API sudah siap)
-      console.log('Login Data:', formData);
-      alert('Login dikirim ke server...'); 
-      
-      // Jika backend merespon bahwa user ini adalah admin:
-      // router.push('/admin-dashboard');
-      
-      // Jika user biasa:
-      router.push('/dashboard');
+      const res = await fetch('http://localhost:5000/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error('Login request failed:', res.status, errText);
+        alert('Login request failed: ' + res.status);
+        return;
+      }
+
+      const data = await res.json();
+      console.log('login response', data);
+
+      if (data && data.status === 'ok') {
+        alert(`Login Berhasil! Selamat datang ${data.role}`);
+        router.push('/dashboard');
+      } else {
+        alert(data?.error || 'Login gagal'); 
+      }
 
     } catch (error) {
-      console.error('Login failed', error);
-      alert('Terjadi kesalahan saat login.');
-    } finally {
-      setIsLoading(false);
-    }
+      console.error('Gagal menghubungi server:', error);
+      alert('Terjadi kesalahan koneksi ke server.');
+    } 
   };
 
   return (
-    <div style={{ display: 'flex', width: '100%', minHeight: '100vh', flexDirection: 'row' }}>
-      {/* --- KIRI (Branding) --- */}
+    <div className='login-container'>
       <div className="left-container">
         <div className="brand-container">
           <img 
-            src="/Cema_Logo.png" 
+            src="/images/Cema_Logo.png" 
             alt="logo" 
             className="logo" 
             onError={(e) => e.currentTarget.style.display='none'} 
@@ -57,7 +65,6 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* --- KANAN (Form Login) --- */}
       <div className="right-container">
         <div className="login-form">
           
@@ -102,18 +109,15 @@ export default function LoginPage() {
               <div className="forgot" style={{ cursor: 'pointer' }}>Forgot Password?</div>
             </div>
 
-            <button type="submit" className="continue-btn" disabled={isLoading}>
-              {isLoading ? 'Processing...' : 'Continue'}
-            </button>
+            <button type="submit" className="continue-btn">Continue</button>
 
-            {/* Social Login & Sign Up Link */}
             <div className="divider">Or</div>
             <div className="social-login">
               <button type="button" className="google-btn">
-                <img src="/google.png" alt="G" onError={(e) => e.currentTarget.style.display='none'} /> Log in with Google
+                <img src="/images/google.png" alt="Google" onError={(e) => e.currentTarget.style.display='none'} /> Log in with Google
               </button>
               <button type="button" className="facebook-btn">
-                <img src="/facebook.png" alt="F" onError={(e) => e.currentTarget.style.display='none'} /> Log in with Facebook
+                <img src="/images/facebook.png" alt="Facebook" onError={(e) => e.currentTarget.style.display='none'} /> Log in with Facebook
               </button>
             </div>
 
