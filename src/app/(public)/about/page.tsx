@@ -1,15 +1,14 @@
-import Image from 'next/image';
-import Link from 'next/link';
-import './about.css';
-
+import Image from "next/image";
+import Link from "next/link";
+import "./about.css";
 
 export const metadata = {
-  title: 'Tentang Kami - Cema Design',
-  description: 'Perjalanan Cema Design dari studio kecil hingga firma arsitektur terpercaya.',
+  title: "Tentang Kami - Cema Design",
+  description:
+    "Perjalanan Cema Design dari studio kecil hingga firma arsitektur terpercaya.",
 };
 
 export default function AboutPage() {
-
   const timelineData = [
     {
       year: "2016",
@@ -48,7 +47,8 @@ export default function AboutPage() {
             Perjalanan <span>Cema Design</span>
           </h1>
           <p className="section-desc">
-            Dari studio kecil hingga firma terpercaya.<br />
+            Dari studio kecil hingga firma terpercaya.
+            <br />
             Sebuah kisah passion, dedikasi, dan inovasi.
           </p>
           <div className="scroll-indicator"></div>
@@ -61,8 +61,8 @@ export default function AboutPage() {
           <div className="icon">🎯</div>
           <h2>Misi Kami</h2>
           <p>
-            Menciptakan ruang yang menginspirasi kehidupan yang lebih baik melalui
-            desain inovatif dan berkelanjutan.
+            Menciptakan ruang yang menginspirasi kehidupan yang lebih baik
+            melalui desain inovatif dan berkelanjutan.
           </p>
         </div>
         <div className="vision box">
@@ -87,12 +87,19 @@ export default function AboutPage() {
             <div key={index} className="timeline-card">
               <div className="year-badge">{item.year}</div>
               {/* Menggunakan Next Image untuk Optimasi */}
-              <div style={{ position: 'relative', width: '100%', height: '200px', margin: '20px 0' }}>
-                <Image 
-                  src={item.img} 
+              <div
+                style={{
+                  position: "relative",
+                  width: "100%",
+                  height: "200px",
+                  margin: "20px 0",
+                }}
+              >
+                <Image
+                  src={item.img}
                   alt={item.title}
                   fill
-                  style={{ objectFit: 'cover', borderRadius: '15px' }}
+                  style={{ objectFit: "cover", borderRadius: "15px" }}
                   sizes="(max-width: 768px) 100vw, 33vw"
                 />
               </div>
@@ -155,11 +162,23 @@ export default function AboutPage() {
         <p>Mari wujudkan ruang impian Anda bersama tim profesional kami</p>
         <div className="cta-buttons">
           {/* Menggunakan Link component, bukan button dengan href */}
-          <Link href="/Contact_Us" className="btn-outline" style={{ display: 'inline-block', textDecoration: 'none' }}>
-              Jadwalkan Konsultasi
+          <Link
+            href="/contact"
+            className="btn-outline"
+            style={{ display: "inline-block", textDecoration: "none" }}
+          >
+            Jadwalkan Konsultasi
           </Link>
-          <Link href="/Home" className="btn-outline" style={{ display: 'inline-block', textDecoration: 'none', marginLeft: '10px' }}>
-              Hubungi Kami
+          <Link
+            href="/contact"
+            className="btn-outline"
+            style={{
+              display: "inline-block",
+              textDecoration: "none",
+              marginLeft: "10px",
+            }}
+          >
+            Hubungi Kami
           </Link>
         </div>
       </section>
@@ -172,7 +191,7 @@ export default function AboutPage() {
           <iframe
             title="Lokasi Kantor Cema Design"
             src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3952.912674222173!2d110.40842507493534!3d-7.799921277414429!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e7a578dd2b86f11%3A0xd671d7c7b9c70f25!2sTelkom%20University!5e0!3m2!1sid!2sid!4v1697274060405!5m2!1sid!2sid"
-            style={{ border: 0, width: '100%', height: '100%' }}
+            style={{ border: 0, width: "100%", height: "100%" }}
             allowFullScreen
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"
