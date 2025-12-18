@@ -432,7 +432,7 @@ export default function HomePage() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-[#333333] mb-4">Layanan Terbaik Kami</h2>
+            <h2 className="text-[#333333] mb-4 font-bold text-4xl">Layanan Terbaik Kami</h2>
             <p className="text-[#868686] max-w-2xl mx-auto text-lg">
               Solusi lengkap untuk semua kebutuhan arsitektur dan desain interior Anda
             </p>
@@ -525,9 +525,9 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="mb-12"
+            className="text-center mb-16"
           >
-            <h2 className="text-[#333333] mb-4">Portfolio Kami</h2>
+            <h2 className="text-[#333333] mb-4 font-bold text-4xl">Portfolio Kami</h2>
             <p className="text-[#868686]">
               Lihat beberapa proyek terbaik yang telah kami kerjakan
             </p>
@@ -786,7 +786,7 @@ export default function HomePage() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-[#333333] mb-4">Apa Kata Klien Kami</h2>
+            <h2 className="text-[#333333] mb-4 font-bold text-4xl">Apa Kata Klien Kami</h2>
             <p className="text-[#868686]">
               Kepuasan klien adalah prioritas utama kami
             </p>
