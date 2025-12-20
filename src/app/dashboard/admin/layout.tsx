@@ -68,9 +68,9 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
         },
         { 
             label: 'Design Quiz', 
-            href: '/dashboard/admin/quiz',
+            href: '/dashboard/admin/design-kuis',
             icon: <FileQuestion size={18} />,
-            activeCheck: (path: string) => path.includes('/quiz')
+            activeCheck: (path: string) => path.includes('/design-kuis')
         },
         { 
             label: 'Chat CS', 
@@ -81,12 +81,12 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
     ];
 
     return (
-        // Wrapper Utama: Full width & height, background abu-abu, TANPA padding aneh-aneh
+        
         <div className="min-h-screen w-full bg-gray-50 flex flex-col">
             
-            {/* Header Admin (Hitam) */}
+            
             <header className="bg-gray-900 text-white border-b border-gray-800 w-full">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="max-w-7xl mx-auto px-10 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-16">
                         <div className="flex items-center gap-3">
                             <div className="bg-blue-600 p-1.5 rounded-lg">
@@ -112,7 +112,7 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
                 </div>
             </header>
 
-            {/* Sticky Navigation Bar (Tabs) */}
+            
             <div className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm w-full">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <nav className="flex gap-1 overflow-x-auto py-1 hide-scrollbar" aria-label="Tabs">
@@ -141,7 +141,7 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
                 </div>
             </div>
 
-            {/* Dynamic Content Area (Halaman Admin kamu akan dirender di sini) */}
+            
             <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {children}
             </main>

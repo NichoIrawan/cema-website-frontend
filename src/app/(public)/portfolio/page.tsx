@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import { ImageWithFallback } from '../../../components/ui/image-with-fallback';
 import {
@@ -21,10 +22,6 @@ import {
   DialogTitle,
 } from '../../../components/ui/dialog';
 
-interface PortfolioPageProps {
-  onNavigate: (page: string) => void;
-}
-
 interface Portfolio {
   id: number;
   title: string;
@@ -34,7 +31,8 @@ interface Portfolio {
   completedDate: string;
 }
 
-export default function PortfolioPage({ onNavigate }: PortfolioPageProps) {
+export default function PortfolioPage() {
+  const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedPortfolio, setSelectedPortfolio] = useState<Portfolio | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -320,7 +318,7 @@ export default function PortfolioPage({ onNavigate }: PortfolioPageProps) {
             </p>
             <div className="flex flex-wrap gap-4 justify-center">
               <motion.button
-                onClick={() => onNavigate('booking')}
+                onClick={() => router.push('/booking')}
                 className="px-8 py-4 bg-white text-[#8CC55A] rounded-lg hover:bg-gray-100 transition-colors inline-flex items-center gap-2 shadow-lg"
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
@@ -328,7 +326,7 @@ export default function PortfolioPage({ onNavigate }: PortfolioPageProps) {
                 Konsultasi Gratis <ArrowRight size={20} />
               </motion.button>
               <motion.button
-                onClick={() => onNavigate('contact')}
+                onClick={() => router.push('/contact')}
                 className="px-8 py-4 bg-transparent border-2 border-white text-white rounded-lg hover:bg-white/10 transition-colors inline-flex items-center gap-2"
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
@@ -342,21 +340,21 @@ export default function PortfolioPage({ onNavigate }: PortfolioPageProps) {
 
       {/* Portfolio Detail Dialog */}
       <Dialog open={!!selectedPortfolio} onOpenChange={() => setSelectedPortfolio(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl p-8 mt-12">
           {selectedPortfolio && (
             <>
               <DialogHeader>
                 <DialogTitle className="text-2xl text-[#333333]">
                   {selectedPortfolio.title}
                 </DialogTitle>
-                <DialogDescription>
+                <DialogDescription className="text-[#868686]">
                   Detail lengkap portfolio proyek
                 </DialogDescription>
               </DialogHeader>
               
               <div className="space-y-6">
                 {/* Image */}
-                <div className="relative h-96 rounded-lg overflow-hidden">
+                <div className="relative h-64 rounded-lg overflow-hidden">
                   <ImageWithFallback
                     src={selectedPortfolio.imageUrl}
                     alt={selectedPortfolio.title}
@@ -394,7 +392,7 @@ export default function PortfolioPage({ onNavigate }: PortfolioPageProps) {
                   <Button
                     onClick={() => {
                       setSelectedPortfolio(null);
-                      onNavigate('booking');
+                      router.push('/booking');
                     }}
                     className="flex-1 bg-[#8CC55A] hover:bg-[#7AB84A]"
                   >
@@ -403,10 +401,10 @@ export default function PortfolioPage({ onNavigate }: PortfolioPageProps) {
                   <Button
                     onClick={() => {
                       setSelectedPortfolio(null);
-                      onNavigate('contact');
+                      router.push('/contact');
                     }}
                     variant="outline"
-                    className="flex-1 border-[#8CC55A] text-[#8CC55A] hover:bg-[#8CC55A]/10"
+                    className="flex-1 border-[#8CC55A] text-[#8CC55A] hover:bg-[#8CC55A]/10 bg-white"
                   >
                     Hubungi Kami
                   </Button>

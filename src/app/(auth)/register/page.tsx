@@ -4,51 +4,105 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
-import '../login/login.css'; // Sesuaikan path CSS agar mengarah ke login.css yang sama
+import { auth, googleProvider } from '@/lib/firebase'; // Ensure this path is correct
+import { signInWithPopup } from 'firebase/auth';
+import '../login/login.css';
 
 export default function RegisterPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+  const [formData, setFormData] = useState({ name: '', email: '', telepon: '', password: '' });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // --- GOOGLE REGISTER/LOGIN HANDLER ---
+  const handleGoogleLogin = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const idToken = await result.user.getIdToken();
+
+      const res = await fetch('http://localhost:5000/api/google-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+      });
+
+      const data = await res.json();
+
+      if (data && data.status === 'ok') {
+        localStorage.setItem('token', data.token);
+        alert(`Registrasi/Login Berhasil! Selamat datang ${data.user.name}`);
+        router.push('/dashboard');
+      } else {
+        alert(data?.error || 'Google Authentication gagal');
+      }
+    } catch (error: any) {
+      console.error('Google Auth Error:', error);
+      if (error.code !== 'auth/popup-closed-by-user') {
+        alert('Terjadi kesalahan saat menggunakan Google.');
+      }
+    }
+  };
+
+  // --- REGULAR FORM SUBMISSION ---
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert('✅ Registrasi Berhasil! Silakan Login.');
-    router.push('/login'); // Redirect ke login setelah daftar
+
+    try {
+      const res = await fetch('http://localhost:5000/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+
+      if (data.status === 'ok') {
+        alert('Registrasi Berhasil! Silakan Login.');
+        router.push('/login');
+      } else {
+        alert(data.error || 'Registrasi gagal');
+      }
+    } catch (error) {
+      console.error('Connection error:', error);
+      alert('Gagal menghubungi server.');
+    }
   };
 
   return (
     <div style={{ display: 'flex', width: '100%', minHeight: '100vh', flexDirection: 'row' }}>
-      
-      {/* --- KIRI (Branding) --- */}
       <div className="left-container">
         <div className="brand-container">
-          <img src="/Cema_Logo.png" alt="logo" className="logo" onError={(e) => e.currentTarget.style.display='none'} />
+          <img src="/images/Cema_Logo.png" alt="logo" className="logo" onError={(e) => e.currentTarget.style.display='none'} />
           <h1 className="brand">Cema<span className="highlight">Design</span></h1>
         </div>
         <div className="left-content">
-          <h2 className="h-content">Lorem Ipsum</h2>
-          <p className="p-content">Lorem Ipsum is simply dummy text of the printing and typesetting industry.</p>
+          <h2 className="h-content">Join Us!</h2>
+          <p className="p-content">Create an account to start your design journey with CemaDesign.</p>
         </div>
       </div>
 
-      {/* --- KANAN (Form Register) --- */}
       <div className="right-container">
         <div className="login-form">
-          
           <p className="welcome-text">CREATE YOUR NEW ACCOUNT</p>
           <h2>Register your Account</h2>
 
           <form onSubmit={handleSubmit}>
-            {/* Input Tambahan: NAMA */}
             <div className="form-group">
-                <input 
-                    type="text" 
-                    placeholder="Full Name" 
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    required
-                />
+              <input 
+                type="text" 
+                placeholder="Full Name" 
+                value={formData.name}
+                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <input 
+                type="text" 
+                placeholder="Nomor Telepon" 
+                value={formData.telepon}
+                onChange={(e) => setFormData({...formData, telepon: e.target.value})}
+                required
+              />
             </div>
 
             <div className="form-group">
@@ -78,32 +132,24 @@ export default function RegisterPage() {
               </button>
             </div>
 
-            <div className="form-options">
-              <label className="remember">
-                <input type="checkbox" style={{ width: 'auto' }} />
-                Remember me
-              </label>
-            </div>
-
             <button type="submit" className="continue-btn">Continue</button>
 
             <div className="divider">Or</div>
 
             <div className="social-login">
-                <button type="button" className="google-btn">
-                <img src="/google.png" alt="G" onError={(e) => e.currentTarget.style.display='none'} /> Log in with Google
-                </button>
-                <button type="button" className="facebook-btn">
-                <img src="/facebook.png" alt="F" onError={(e) => e.currentTarget.style.display='none'} /> Log in with Facebook
-                </button>
+              <button type="button" className="google-btn" onClick={handleGoogleLogin}>
+                <img src="/images/google.png" alt="G" /> Log in with Google
+              </button>
+              <button type="button" className="facebook-btn">
+                <img src="/images/facebook.png" alt="F" /> Log in with Facebook
+              </button>
             </div>
 
             <p className="signup">
-                Have Account? 
-                {/* Link Balik ke Login */}
-                <Link href="/login" className="signup-link" style={{ marginLeft: '5px' }}>
+              Have Account? 
+              <Link href="/login" className="signup-link" style={{ marginLeft: '5px' }}>
                 SIGN IN HERE
-                </Link>
+              </Link>
             </p>
           </form>
         </div>
