@@ -9,7 +9,7 @@ export default function DashboardPage() {
         id: '1',
         name: 'Admin',
         email: 'admin@email.com',
-        role: Role.ADMIN // Change to Role.CLIENT to test client redirect
+        role: Role.CLIENT // Change to Role.CLIENT to test client redirect
     };
 
     // If not authenticated, redirect to login
@@ -21,7 +21,7 @@ export default function DashboardPage() {
     if (user.role === Role.ADMIN) {
         redirect('/dashboard/admin');
     } else if (user.role === Role.CLIENT) {
-        redirect('/dashboard/client/my-project');
+        redirect('/dashboard/client');
     }
 
     // Fallback for guest or unknown roles

@@ -1,47 +1,104 @@
-import type { Project } from '@/lib/types';
+/**
+ * Project Hub Dashboard - List Page
+ * 
+ * Shows all projects with search, filter, and pagination.
+ * Route: /dashboard/client/my-project
+ */
 
-export default function MyProjectPage() {
-    // TODO: Fetch from API
-    const project: Partial<Project> = {
-        id: '1',
-        name: 'Renovasi Villa Bali',
-        status: 'in-progress',
-        serviceType: 'renovasi',
-        startDate: new Date('2024-12-01'),
-        progress: 45
+'use client';
+
+import { useState, useMemo } from 'react';
+import type { Project } from './types';
+import { allProjects } from './data';
+import { ITEMS_PER_PAGE, BRAND } from './constants';
+import { Pagination, EmptyState } from '@/components/ui';
+import {
+    Toolbar,
+    ProjectCard,
+} from './components';
+
+export default function ProjectListPage() {
+    const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'completed'>('active');
+    const [currentPage, setCurrentPage] = useState(1);
+
+    // Filter projects
+    const filteredProjects = useMemo(() => {
+        let result = allProjects;
+
+        if (statusFilter === 'active') {
+            result = result.filter(p => p.status !== 'completed');
+        } else if (statusFilter === 'completed') {
+            result = result.filter(p => p.status === 'completed');
+        }
+
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            result = result.filter(p => 
+                p.title.toLowerCase().includes(query) ||
+                p.location.toLowerCase().includes(query)
+            );
+        }
+
+        return result;
+    }, [searchQuery, statusFilter]);
+
+    // Pagination
+    const totalPages = Math.ceil(filteredProjects.length / ITEMS_PER_PAGE);
+    const paginatedProjects = useMemo(() => {
+        const start = (currentPage - 1) * ITEMS_PER_PAGE;
+        return filteredProjects.slice(start, start + ITEMS_PER_PAGE);
+    }, [filteredProjects, currentPage]);
+
+    const handleFilterChange = (filter: 'all' | 'active' | 'completed') => {
+        setStatusFilter(filter);
+        setCurrentPage(1);
+    };
+
+    const handleSearch = (query: string) => {
+        setSearchQuery(query);
+        setCurrentPage(1);
     };
 
     return (
-        <div className="bg-white border border-gray-200 rounded p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">My Project</h2>
-            <div className="space-y-4">
-                <div className="p-6 border border-gray-200 rounded">
-                    <h3 className="font-medium text-gray-900 mb-2">{project.name}</h3>
-                    <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                            <span className="text-gray-600">Status:</span>
-                            <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
-                                {project.status === 'in-progress' ? 'In Progress' : project.status}
-                            </span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-gray-600">Service Type:</span>
-                            <span className="text-gray-900 capitalize">{project.serviceType}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-gray-600">Start Date:</span>
-                            <span className="text-gray-900">{project.startDate?.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-gray-600">Progress:</span>
-                            <span className="text-gray-900">{project.progress}%</span>
-                        </div>
-                    </div>
-                </div>
-                <div className="p-10 border-2 border-dashed border-gray-300 rounded text-center text-gray-500">
-                    Additional project details will appear here
+        <>
+            <Toolbar 
+                searchQuery={searchQuery}
+                setSearchQuery={handleSearch}
+                statusFilter={statusFilter}
+                setStatusFilter={handleFilterChange}
+                projectCount={filteredProjects.length}
+            />
+            <div className="flex-1 overflow-y-auto scrollbar-thin">
+                <div className="max-w-7xl mx-auto px-6 py-6">
+                    {paginatedProjects.length > 0 ? (
+                        <>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {paginatedProjects.map(project => (
+                                    <ProjectCard 
+                                        key={project.id} 
+                                        project={project} 
+                                    />
+                                ))}
+                            </div>
+                            <Pagination
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                onPageChange={setCurrentPage}
+                                totalItems={filteredProjects.length}
+                                itemsPerPage={ITEMS_PER_PAGE}
+                                primaryColor={BRAND.primary}
+                            />
+                        </>
+                    ) : (
+                        <EmptyState 
+                            title="Tidak ada proyek"
+                            description="Coba ubah filter atau kata kunci pencarian"
+                        />
+                    )}
+                    <div className="h-8" />
                 </div>
             </div>
-        </div>
+        </>
     );
 }

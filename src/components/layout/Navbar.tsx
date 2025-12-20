@@ -19,7 +19,7 @@ export function Navbar() {
     const user: User = {
         id: '1',
         name: 'Admin',
-        role: UserRole.ADMIN,
+        role: UserRole.CLIENT,
         email: 'admin@email.com'
     };
 
