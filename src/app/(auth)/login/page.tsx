@@ -2,53 +2,196 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { redirect, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
+import { auth, googleProvider } from "@/lib/firebase"; // Pastikan path ini sesuai
+import { signInWithPopup } from "firebase/auth";
 import "./login.css";
 
 export default function LoginPage() {
   const router = useRouter();
+
+  // --- STATE ---
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({ email: "", password: "" });
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
 
+  // State untuk Popup Manual (Tanpa library tambahan)
+  const [popup, setPopup] = useState({
+    show: false,
+    message: "",
+    type: "success", // 'success' atau 'error'
+  });
+
+  // Base URL dari Environment Variable
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+  // --- HELPER UNTUK TUTUP POPUP ---
+  const closePopup = () => {
+    setPopup({ ...popup, show: false });
+    // Jika login sukses, arahkan ke dashboard setelah popup ditutup
+    if (popup.type === "success") {
+      router.push("/dashboard");
+    }
+  };
+
+  // --- GOOGLE LOGIN HANDLER ---
+  const handleGoogleLogin = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/login", {
+      // 1. Trigger Google Popup
+      const result = await signInWithPopup(auth, googleProvider);
+
+      // 2. Ambil ID Token
+      const idToken = await result.user.getIdToken();
+
+      // 3. Kirim ke Backend
+      const res = await fetch(`${API_URL}/google-login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        body: JSON.stringify({ idToken }),
+      });
+
+      const data = await res.json();
+
+      if (data && data.status === "ok") {
+        localStorage.setItem("token", data.token);
+        // Tampilkan Popup Sukses
+        setPopup({
+          show: true,
+          message: `Login Berhasil! Selamat datang ${
+            data.user?.name || "User"
+          }`,
+          type: "success",
+        });
+      } else {
+        // Tampilkan Popup Gagal
+        setPopup({
+          show: true,
+          message: data?.error || "Google login gagal",
+          type: "error",
+        });
+      }
+    } catch (error: any) {
+      console.error("Google login error:", error);
+      if (error.code !== "auth/popup-closed-by-user") {
+        setPopup({
+          show: true,
+          message: "Terjadi kesalahan saat login Google.",
+          type: "error",
+        });
+      }
+    }
+  };
+
+  // --- REGULAR EMAIL/PASSWORD HANDLER ---
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      const res = await fetch(`${API_URL}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
       if (!res.ok) {
-        const errText = await res.text();
-        console.error("Login request failed:", res.status, errText);
-        alert("Login request failed: " + res.status);
+        setPopup({
+          show: true,
+          message: `Request gagal: ${res.status}`,
+          type: "error",
+        });
         return;
       }
 
       const data = await res.json();
-      console.log("login response", data);
 
       if (data && data.status === "ok") {
-        // Simpan token (sesuaikan nama field dari backend)
         localStorage.setItem("token", data.token);
-
-        alert(`Login Berhasil! Selamat datang ${data.role}`);
-        router.push("/dashboard");
+        // Tampilkan Popup Sukses
+        setPopup({
+          show: true,
+          message: `Login Berhasil! Selamat datang ${data.role || "User"}`,
+          type: "success",
+        });
       } else {
-        alert(data?.error || "Login gagal");
+        // Tampilkan Popup Gagal
+        setPopup({
+          show: true,
+          message: data?.error || "Login gagal, cek email/password.",
+          type: "error",
+        });
       }
     } catch (error) {
       console.error("Gagal menghubungi server:", error);
-      alert("Terjadi kesalahan koneksi ke server.");
+      setPopup({
+        show: true,
+        message: "Terjadi kesalahan koneksi ke server.",
+        type: "error",
+      });
     }
   };
 
   return (
     <div className="login-container">
+      {/* --- KOMPONEN POPUP CUSTOM --- */}
+      {popup.show && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.5)", // Layar hitam transparan
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "white",
+              padding: "30px",
+              borderRadius: "12px",
+              textAlign: "center",
+              boxShadow: "0 4px 15px rgba(0,0,0,0.2)",
+              maxWidth: "400px",
+              width: "80%",
+            }}
+          >
+            <h3
+              style={{
+                color: popup.type === "success" ? "#2ecc71" : "#e74c3c",
+                marginBottom: "10px",
+              }}
+            >
+              {popup.type === "success" ? "Berhasil!" : "Gagal!"}
+            </h3>
+            <p style={{ marginBottom: "20px", color: "#333" }}>
+              {popup.message}
+            </p>
+            <button
+              onClick={closePopup}
+              style={{
+                backgroundColor:
+                  popup.type === "success" ? "#2ecc71" : "#e74c3c",
+                color: "white",
+                border: "none",
+                padding: "10px 20px",
+                borderRadius: "6px",
+                cursor: "pointer",
+                fontWeight: "bold",
+              }}
+            >
+              {popup.type === "success" ? "Lanjut" : "Tutup"}
+            </button>
+          </div>
+        </div>
+      )}
+      {/* --- END POPUP --- */}
+
       <div className="left-container">
         <div className="brand-container">
           <img
@@ -150,21 +293,27 @@ export default function LoginPage() {
             </button>
 
             <div className="divider">Or</div>
+
             <div className="social-login">
-              <button type="button" className="google-btn">
+              <button
+                type="button"
+                className="google-btn"
+                onClick={handleGoogleLogin}
+              >
                 <img
                   src="/images/google.png"
                   alt="Google"
                   onError={(e) => (e.currentTarget.style.display = "none")}
-                />{" "}
+                />
                 Log in with Google
               </button>
+
               <button type="button" className="facebook-btn">
                 <img
                   src="/images/facebook.png"
                   alt="Facebook"
                   onError={(e) => (e.currentTarget.style.display = "none")}
-                />{" "}
+                />
                 Log in with Facebook
               </button>
             </div>
