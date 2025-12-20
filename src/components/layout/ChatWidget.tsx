@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { usePathname } from "next/navigation"; 
-import { db } from "@/lib/firebase"; 
+import { usePathname } from "next/navigation";
+import { db } from "@/lib/firebase";
 import {
   ref,
   push,
@@ -13,7 +13,6 @@ import {
   serverTimestamp,
   increment,
 } from "firebase/database";
-
 
 interface Message {
   id: string;
@@ -27,16 +26,17 @@ interface Message {
 }
 
 export default function ChatWidget() {
-  const pathname = usePathname(); // Hook untuk mengambil URL saat ini
-  
+  const pathname = usePathname();
+
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputVal, setInputVal] = useState("");
   const [sessionId, setSessionId] = useState<string>("");
+  const [showToast, setShowToast] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // 1. Cek Session ID di LocalStorage
+  // 1. Cek Session ID
   useEffect(() => {
     if (typeof window !== "undefined") {
       let storedSession = localStorage.getItem("chatSessionId");
@@ -48,20 +48,26 @@ export default function ChatWidget() {
     }
   }, []);
 
-  // 2. Listener Firebase Realtime
+  // 2. Listener Firebase (DIPERBAIKI)
   useEffect(() => {
     if (!sessionId) return;
 
     const messagesRef = ref(db, `chats/${sessionId}/messages`);
     const sessionRef = ref(db, `chats/${sessionId}`);
 
-    // Pesan Masuk
+    // FIX: Cek duplikat ID agar pesan tidak muncul ganda (loop visual)
     const unsubAdd = onChildAdded(messagesRef, (snapshot) => {
       const msg = snapshot.val();
-      setMessages((prev) => [...prev, { ...msg, id: snapshot.key }]);
+      setMessages((prev) => {
+        // Jika ID sudah ada di state, jangan tambah lagi
+        if (prev.some((m) => m.id === snapshot.key)) {
+          return prev;
+        }
+        return [...prev, { ...msg, id: snapshot.key }];
+      });
     });
 
-    // Pesan Berubah (Edit/Delete)
+    // Handle Edit/Perubahan Status
     const unsubChange = onChildChanged(messagesRef, (snapshot) => {
       const updatedMsg = snapshot.val();
       setMessages((prev) =>
@@ -73,10 +79,11 @@ export default function ChatWidget() {
       );
     });
 
-    // Sesi Dihapus Admin
+    // Handle Hapus Sesi
     const unsubRemove = onChildRemoved(sessionRef, () => {
       setMessages([]);
-      alert("Sesi chat telah diakhiri oleh Admin.");
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
     });
 
     return () => {
@@ -86,18 +93,16 @@ export default function ChatWidget() {
     };
   }, [sessionId]);
 
-  // 3. Auto Scroll ke Bawah
+  // 3. Auto Scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isOpen]);
 
-  // Fungsi Kirim Pesan
   const sendMessage = () => {
     if (!inputVal.trim()) return;
-
     const now = new Date();
 
-    // Update Meta Data untuk Admin Dashboard
+    // Update Meta Data
     update(ref(db, `chats/${sessionId}/meta`), {
       name: "Guest User",
       lastMessage: inputVal.trim(),
@@ -105,7 +110,7 @@ export default function ChatWidget() {
       unreadCount: increment(1),
     });
 
-    // Simpan Pesan
+    // Push Pesan Baru
     push(ref(db, `chats/${sessionId}/messages`), {
       sender: "user",
       text: inputVal.trim(),
@@ -124,7 +129,6 @@ export default function ChatWidget() {
     if (e.key === "Enter") sendMessage();
   };
 
-  // Helper: Cek batas waktu 5 menit
   const isWithin5Minutes = (timestamp: string | number) => {
     if (!timestamp) return false;
     const diff =
@@ -132,19 +136,20 @@ export default function ChatWidget() {
     return diff <= 5;
   };
 
-  // Fungsi Hapus Pesan
   const deleteMessage = (id: string, timestamp: string | number) => {
     if (!isWithin5Minutes(timestamp)) {
       alert("Pesan hanya dapat dihapus dalam 5 menit!");
       return;
     }
+    // Update pesan menjadi terhapus
     update(ref(db, `chats/${sessionId}/messages/${id}`), {
       text: "🗑️ Pesan dihapus oleh pengguna",
       isDeleted: true,
+      // Tips: Tambahkan flag ini jika Bot kamu bisa membacanya untuk ignore
+      // ignoreBot: true
     });
   };
 
-  // Fungsi Toggle Edit Lokal (UI)
   const toggleEditLocal = (id: string, timestamp: string | number) => {
     if (!isWithin5Minutes(timestamp)) {
       alert("Pesan hanya dapat diedit dalam 5 menit!");
@@ -159,7 +164,6 @@ export default function ChatWidget() {
     );
   };
 
-  // Fungsi Simpan Edit ke Database
   const saveEdit = (id: string, newText: string) => {
     if (newText && newText.trim()) {
       update(ref(db, `chats/${sessionId}/messages/${id}`), {
@@ -172,15 +176,12 @@ export default function ChatWidget() {
     );
   };
 
-  
   if (pathname?.startsWith("/dashboard/admin")) {
     return null;
   }
 
- 
   return (
     <div className="fixed bottom-5 right-5 z-[9999] font-sans">
-    
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`w-[60px] h-[60px] rounded-full bg-[#8cc55a] text-white border-none cursor-pointer text-2xl shadow-lg transition-transform hover:scale-110 hover:bg-[#7ab84a] flex items-center justify-center`}
@@ -188,11 +189,10 @@ export default function ChatWidget() {
         {isOpen ? "✖" : "💬"}
       </button>
 
-     
       {isOpen && (
         <div className="absolute bottom-20 right-0 w-[320px] h-[500px] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden">
-         
-          <div className="bg-[#8cc55a] text-white p-3 flex items-center">
+          {/* Header */}
+          <div className="bg-[#8cc55a] text-white p-3 flex items-center shrink-0">
             <div className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center mr-3">
               💬
             </div>
@@ -208,55 +208,73 @@ export default function ChatWidget() {
             </button>
           </div>
 
-          
-          <div className="bg-[#f7f7f7] p-3 flex-grow overflow-y-auto flex flex-col gap-2">
+          {/* Popup Toast */}
+          {showToast && (
+            <div className="absolute top-16 left-1/2 transform -translate-x-1/2 z-50 bg-black/80 text-white px-4 py-2 rounded text-xs shadow-lg w-[90%] text-center">
+              ⚠️ Sesi chat telah dihapus Admin.
+            </div>
+          )}
+
+          {/* Area Pesan */}
+          <div className="bg-[#f7f7f7] p-3 flex-1 min-h-0 overflow-y-auto flex flex-col gap-2 relative">
+            {messages.length === 0 && (
+              <div className="text-center text-gray-400 mt-10 text-sm px-4">
+                <p className="font-bold mb-1">Selamat datang di Cema Design!</p>
+                <p>Silahkan berikan pertanyaan, kami siap membantu Anda.</p>
+              </div>
+            )}
+
             {messages.map((msg) => (
               <div
                 key={msg.id}
-                className={`flex flex-col max-w-[75%] ${
+                className={`flex flex-col max-w-[85%] ${
                   msg.sender === "user"
                     ? "self-end items-end"
                     : "self-start items-start"
                 }`}
               >
+                {/* --- MODE EDIT --- */}
                 {msg.isEditingLocal ? (
-                
-                  <div className="bg-[#8cc55a] p-2 rounded-lg flex gap-2 items-center">
-                    <input
-                      type="text"
+                  <div className="bg-white border border-gray-300 p-2 rounded-lg flex flex-col gap-2 w-full min-w-[200px] shadow-sm">
+                    <textarea
                       defaultValue={msg.text}
-                      className="flex-grow bg-white/20 border border-white/50 rounded px-2 py-1 text-white text-sm outline-none"
+                      rows={2}
+                      className="w-full resize-none bg-gray-50 border border-gray-200 rounded p-2 text-black text-sm outline-none focus:ring-1 focus:ring-[#8cc55a]"
                       onKeyDown={(e) => {
-                        if (e.key === "Enter")
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
                           saveEdit(msg.id, e.currentTarget.value);
+                        }
                         if (e.key === "Escape")
                           toggleEditLocal(msg.id, msg.timestamp);
                       }}
+                      autoFocus
                     />
-                    <button
-                      onClick={(e) =>
-                        saveEdit(
-                          msg.id,
-                          (e.currentTarget.previousSibling as HTMLInputElement)
-                            .value
-                        )
-                      }
-                      className="text-xs bg-white text-black px-2 py-1 rounded"
-                    >
-                      ✓
-                    </button>
-                    <button
-                      onClick={() => toggleEditLocal(msg.id, msg.timestamp)}
-                      className="text-xs bg-white text-black px-2 py-1 rounded"
-                    >
-                      ✕
-                    </button>
+
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => toggleEditLocal(msg.id, msg.timestamp)}
+                        className="text-xs bg-red-100 text-red-600 px-3 py-1.5 rounded-md hover:bg-red-200 font-medium flex items-center gap-1 transition-colors"
+                      >
+                        Batal
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          const textarea = e.currentTarget.parentElement
+                            ?.previousElementSibling as HTMLTextAreaElement;
+                          if (textarea) saveEdit(msg.id, textarea.value);
+                        }}
+                        className="text-xs bg-[#8cc55a] text-white px-3 py-1.5 rounded-md hover:bg-[#7bc04a] font-medium flex items-center gap-1 transition-colors"
+                      >
+                        Simpan
+                      </button>
+                    </div>
                   </div>
                 ) : (
-                 
+                  /* --- TAMPILAN PESAN --- */
                   <>
                     <div
-                      className={`px-3 py-2 rounded-lg text-sm ${
+                      className={`px-3 py-2 rounded-lg text-sm break-words ${
                         msg.isDeleted
                           ? "italic text-gray-500 bg-gray-200"
                           : msg.sender === "user"
@@ -266,7 +284,7 @@ export default function ChatWidget() {
                     >
                       {msg.text}{" "}
                       {msg.isEdited && (
-                        <span className="text-[10px] opacity-70">
+                        <span className="text-[10px] opacity-70 block text-right mt-1">
                           (edited)
                         </span>
                       )}
@@ -275,24 +293,23 @@ export default function ChatWidget() {
                       {msg.time}
                     </div>
 
-                  
                     {msg.sender === "user" &&
                       !msg.isDeleted &&
                       isWithin5Minutes(msg.timestamp) && (
-                        <div className="flex gap-2 mt-1">
+                        <div className="flex gap-3 mt-1 opacity-60 hover:opacity-100 transition-opacity">
                           <button
                             onClick={() =>
                               toggleEditLocal(msg.id, msg.timestamp)
                             }
-                            className="text-[10px] text-gray-400 hover:text-gray-600"
+                            className="text-[10px] text-gray-500 hover:text-[#8cc55a] font-medium cursor-pointer"
                           >
-                            ✎ Edit
+                            Edit
                           </button>
                           <button
                             onClick={() => deleteMessage(msg.id, msg.timestamp)}
-                            className="text-[10px] text-gray-400 hover:text-red-500"
+                            className="text-[10px] text-gray-500 hover:text-red-500 font-medium cursor-pointer"
                           >
-                            ❌ Hapus
+                            Hapus
                           </button>
                         </div>
                       )}
@@ -303,15 +320,15 @@ export default function ChatWidget() {
             <div ref={messagesEndRef} />
           </div>
 
-      
-          <div className="flex p-3 border-t bg-white">
+          {/* Area Input */}
+          <div className="flex p-3 border-t bg-white shrink-0">
             <input
               type="text"
               value={inputVal}
               onChange={(e) => setInputVal(e.target.value)}
               onKeyDown={handleKeyPress}
               placeholder="Ketik pesan..."
-              className="flex-grow p-2 border border-gray-300 rounded-lg outline-none focus:border-[#8cc55a]"
+              className="flex-grow p-2 border border-gray-300 rounded-lg outline-none focus:border-[#8cc55a] bg-white text-black placeholder-gray-400"
             />
             <button
               onClick={sendMessage}
