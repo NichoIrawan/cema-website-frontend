@@ -2,16 +2,18 @@
 
 import { ClientHeader, ClientNavigation } from '@/components/dashboard/client';
 
+import { useSession, signOut } from "next-auth/react";
+
 interface ClientDashboardLayoutProps {
     children: React.ReactNode;
 }
 
 export default function ClientDashboardLayout({ children }: ClientDashboardLayoutProps) {
-    // TODO: Get from auth context
-    const userName = 'John Doe';
+    const { data: session } = useSession();
+    const userName = session?.user?.name || 'Client';
 
-    const handleLogout = () => {
-        alert('Logout clicked');
+    const handleLogout = async () => {
+        await signOut({ callbackUrl: "/" });
     };
 
     return (
