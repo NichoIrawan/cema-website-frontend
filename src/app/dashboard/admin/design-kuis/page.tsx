@@ -14,10 +14,15 @@ import {
   AlertCircle,
   CheckCircle,
 } from "lucide-react";
+import {
+  fetchQuizQuestionsAction,
+  saveQuizQuestionsAction,
+  deleteQuizQuestionAction,
+  createQuizQuestionAction,
+} from "@/app/actions/design-quiz-actions";
 
 // --- KONFIGURASI API ---
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
 
 // --- TIPE DATA ---
 
@@ -93,7 +98,6 @@ export default function DesignQuizAdmin() {
 
   // --- LOAD DATA (GET) ---
   useEffect(() => {
-    // Tunggu sampai status authentikasi selesai loading
     if (status === "loading") return;
 
     // Load Styles (Local)
@@ -104,39 +108,14 @@ export default function DesignQuizAdmin() {
     const fetchQuestions = async () => {
       if (!API_URL) return;
 
-      try {
-        const token = session?.accessToken;
-        const headers: HeadersInit = {
-          "Content-Type": "application/json",
-        };
-
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
-        }
-
-        const res = await fetch(`${API_URL}/quiz-questions`, {
-          method: "GET",
-          headers: headers,
-        });
-
-        if (res.ok) {
-          const responseJson = await res.json();
-          if (responseJson.data && Array.isArray(responseJson.data)) {
-            setQuestions(responseJson.data);
-          } else if (Array.isArray(responseJson)) {
-            setQuestions(responseJson);
-          } else {
-            setQuestions([]);
-          }
-        }
-      } catch (error) {
-        console.error("Error connection:", error);
-        setQuestions([]);
+      const result = await fetchQuizQuestionsAction();
+      if (result.success && result.data) {
+        setQuestions(result.data);
       }
     };
 
     fetchQuestions();
-  }, [status, session]);
+  }, [status]);
 
   // --- HANDLERS ---
 
@@ -144,54 +123,18 @@ export default function DesignQuizAdmin() {
   const handleSave = async () => {
     setIsLoading(true);
     try {
-      const token = session?.accessToken;
-      if (!token) {
-        showToast("Sesi habis. Silahkan login ulang.", "error");
-        return;
-      }
-
-      const headers: HeadersInit = {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      };
-
       // 1. Simpan Styles ke LocalStorage
       localStorage.setItem("quizStyles", JSON.stringify(styles));
 
       // 2. Simpan Perubahan ke API
       const currentQuestions = Array.isArray(questions) ? questions : [];
+      const result = await saveQuizQuestionsAction(currentQuestions);
 
-      const updatePromises = currentQuestions.map(async (q) => {
-        try {
-          const res = await fetch(`${API_URL}/quiz-questions/${q.id}`, {
-            method: "PUT",
-            headers: headers,
-            body: JSON.stringify({
-              id: q.id,
-              text: q.text,
-              imageUrl: q.imageUrl,
-              relatedStyle: q.relatedStyle,
-            }),
-          });
-
-          if (!res.ok) {
-            const errData = await res.json().catch(() => ({}));
-            // Throw error to be caught by Promise.allSettled or handled here
-            throw new Error(errData.message || `Failed to update ${q.id} (${res.status})`);
-          }
-          return res;
-        } catch (err: any) {
-          console.error(`Failed to update question ${q.id}:`, err);
-          throw err;
-        }
-      });
-
-      // Use Promise.allSettled to track which succeeded and which failed (optional, but Promise.all fails fast)
-      // Actually standard Promise.all is fine if we just want to know if *any* failed.
-      // But let's use all to catch the first error.
-      await Promise.all(updatePromises);
-
-      showToast("Data berhasil disimpan ke server!", "success");
+      if (result.success) {
+        showToast(result.message || "Data berhasil disimpan ke server!", "success");
+      } else {
+        showToast(result.message || "Gagal menyimpan", "error");
+      }
     } catch (error: any) {
       console.error("Save error:", error);
       showToast(`Gagal menyimpan: ${error.message}`, "error");
@@ -222,24 +165,11 @@ export default function DesignQuizAdmin() {
       // Optimistic update
       setQuestions(currentQuestions.filter((q) => q.id !== id));
 
-      try {
-        const token = session?.accessToken;
-        const headers: HeadersInit = {
-          "Content-Type": "application/json",
-        };
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
-        }
-
-        await fetch(`${API_URL}/quiz-questions/${id}`, {
-          method: "DELETE",
-          headers: headers,
-        });
-        showToast("Pertanyaan berhasil dihapus.", "success");
-      } catch (error) {
-        console.error("Gagal menghapus:", error);
-        showToast("Gagal menghapus data di server.", "error");
-        // Rollback jika perlu (opsional)
+      const result = await deleteQuizQuestionAction(id);
+      if (result.success) {
+        showToast(result.message || "Pertanyaan berhasil dihapus.", "success");
+      } else {
+        showToast(result.message || "Gagal menghapus data di server.", "error");
       }
     }
 
@@ -263,12 +193,6 @@ export default function DesignQuizAdmin() {
   };
 
   const addQuestion = async () => {
-    const token = session?.accessToken;
-    if (!token) {
-      showToast("Sesi habis. Silahkan login ulang.", "error"); // Ganti alert
-      return;
-    }
-
     const newId = Date.now().toString();
     const defaultStyle = styles.length > 0 ? styles[0].id : "";
 
@@ -281,18 +205,9 @@ export default function DesignQuizAdmin() {
 
     setQuestions([...(Array.isArray(questions) ? questions : []), newQ]);
 
-    try {
-      await fetch(`${API_URL}/quiz-questions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(newQ),
-      });
-    } catch (error) {
-      console.error("Gagal membuat pertanyaan:", error);
-      showToast("Gagal koneksi ke server.", "error"); // Ganti alert
+    const result = await createQuizQuestionAction(newQ);
+    if (!result.success) {
+      showToast(result.message || "Gagal koneksi ke server.", "error");
     }
   };
 
@@ -372,8 +287,8 @@ export default function DesignQuizAdmin() {
           onClick={handleSave}
           disabled={isLoading}
           className={`flex items-center gap-2 text-white px-4 py-2 rounded-lg transition-colors ${isLoading
-            ? "bg-gray-400 cursor-not-allowed"
-            : "bg-blue-600 hover:bg-blue-700"
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-blue-600 hover:bg-blue-700"
             }`}
         >
           <Save size={18} /> {isLoading ? "Menyimpan..." : "Simpan Data"}
@@ -385,8 +300,8 @@ export default function DesignQuizAdmin() {
         <button
           onClick={() => setActiveTab("styles")}
           className={`pb-3 px-4 text-sm font-medium transition-all ${activeTab === "styles"
-            ? "text-blue-600 border-b-2 border-blue-600"
-            : "text-gray-500 hover:text-gray-700"
+              ? "text-blue-600 border-b-2 border-blue-600"
+              : "text-gray-500 hover:text-gray-700"
             }`}
         >
           1. Atur Kategori Desain (Hasil)
@@ -394,8 +309,8 @@ export default function DesignQuizAdmin() {
         <button
           onClick={() => setActiveTab("questions")}
           className={`pb-3 px-4 text-sm font-medium transition-all ${activeTab === "questions"
-            ? "text-blue-600 border-b-2 border-blue-600"
-            : "text-gray-500 hover:text-gray-700"
+              ? "text-blue-600 border-b-2 border-blue-600"
+              : "text-gray-500 hover:text-gray-700"
             }`}
         >
           2. Atur Pertanyaan & Gambar
@@ -611,8 +526,8 @@ export default function DesignQuizAdmin() {
       {notification.show && (
         <div
           className={`fixed bottom-10 right-10 px-6 py-4 rounded-lg shadow-xl border flex items-center gap-3 animate-in slide-in-from-right duration-300 z-50 ${notification.type === "success"
-            ? "bg-green-50 border-green-200 text-green-800"
-            : "bg-red-50 border-red-200 text-red-800"
+              ? "bg-green-50 border-green-200 text-green-800"
+              : "bg-red-50 border-red-200 text-red-800"
             }`}
         >
           {notification.type === "success" ? (

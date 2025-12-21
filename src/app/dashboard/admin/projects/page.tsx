@@ -11,6 +11,10 @@ import {
   Search,
   Filter,
 } from "lucide-react";
+import {
+  fetchProjectsAction,
+  updateProjectAction,
+} from "@/app/actions/project-actions";
 
 interface Project {
   _id: string;
@@ -52,11 +56,12 @@ export default function AdminProjectPage() {
     const fetchProjects = async () => {
       try {
         setIsLoading(true);
-        const res = await fetch(`${API_URL}/projects`, {
-          headers: { Authorization: `Bearer ${session?.accessToken}` },
-        });
-        const result = await res.json();
-        if (result.status === "success") setProjects(result.data);
+        const result = await fetchProjectsAction();
+        if (result.success && result.data) {
+          setProjects(result.data);
+        } else {
+          showAlert(result.message || "Gagal load data", "error");
+        }
       } catch (error) {
         showAlert("Gagal load data", "error");
       } finally {
@@ -64,36 +69,22 @@ export default function AdminProjectPage() {
       }
     };
     fetchProjects();
-  }, [API_URL, session, status]);
+  }, [status]);
 
   const handleUpdate = async (projectId: string, payload: any) => {
     if (!projectId) return;
 
     setIsUpdating(projectId);
     try {
-      const res = await fetch(`${API_URL}/projects/${projectId}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${session?.accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+      const result = await updateProjectAction(projectId, payload);
 
-      const result = await res.json();
-
-      if (res.ok) {
+      if (result.success) {
         setProjects((prev) =>
           prev.map((p) => (p.id === projectId ? { ...p, ...payload } : p))
         );
-        showAlert("Update Berhasil!", "success");
+        showAlert(result.message || "Update Berhasil!", "success");
       } else {
-        console.error("DEBUG BACKEND ERROR:", {
-          status: res.status,
-          response: result,
-          projectIdSent: projectId,
-        });
-        showAlert(result.error || result.message || "Gagal update", "error");
+        showAlert(result.message || "Gagal update", "error");
       }
     } catch (error) {
       showAlert("Koneksi Error", "error");
@@ -130,11 +121,10 @@ export default function AdminProjectPage() {
       {/* Toast Alert */}
       {alert.show && (
         <div
-          className={`fixed top-5 right-5 z-50 flex items-center gap-3 px-6 py-3 rounded-lg shadow-lg border ${
-            alert.type === "success"
+          className={`fixed top-5 right-5 z-50 flex items-center gap-3 px-6 py-3 rounded-lg shadow-lg border ${alert.type === "success"
               ? "bg-green-50 border-green-200 text-green-800"
               : "bg-red-50 border-red-200 text-red-800"
-          }`}
+            }`}
         >
           {alert.type === "success" ? (
             <CheckCircle size={18} />

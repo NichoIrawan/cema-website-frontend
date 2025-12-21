@@ -14,6 +14,7 @@ import {
   LogOut,
   ShieldCheck,
 } from "lucide-react";
+import { useSession, signOut } from "next-auth/react";
 
 interface AdminDashboardLayoutProps {
   children: React.ReactNode;
@@ -23,6 +24,12 @@ export default function AdminDashboardLayout({
   children,
 }: AdminDashboardLayoutProps) {
   const pathname = usePathname();
+  const { data: session } = useSession();
+
+  // Logout Handler
+  const handleLogout = async () => {
+    await signOut({ callbackUrl: "/" });
+  };
 
   // Menu Navigasi Admin
   const tabs = [
@@ -60,13 +67,15 @@ export default function AdminDashboardLayout({
       label: "User Management",
       href: "/dashboard/admin/user-management",
       icon: <Users size={18} />,
-      activeCheck: (path: string) => path.includes("/user-management"),
+      activeCheck: (path: string) =>
+        path.includes("/users") || path.includes("/user-management"),
     },
     {
       label: "Kalkulator",
       href: "/dashboard/admin/kalkulator",
       icon: <Calculator size={18} />,
-      activeCheck: (path: string) => path.includes("/calculator"),
+      activeCheck: (path: string) =>
+        path.includes("/kalkulator") || path.includes("/calculator"),
     },
     {
       label: "Design Quiz",
@@ -84,6 +93,7 @@ export default function AdminDashboardLayout({
 
   return (
     <div className="min-h-screen w-full bg-gray-50 flex flex-col">
+      {/* Header Bagian Atas */}
       <header className="bg-gray-900 text-white border-b border-gray-800 w-full">
         <div className="max-w-7xl mx-auto px-10 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
@@ -101,11 +111,11 @@ export default function AdminDashboardLayout({
 
             <div className="flex items-center gap-4">
               <span className="text-sm text-gray-300 hidden sm:block">
-                Halo, Super Admin
+                Halo, {session?.user?.name || "Admin"}
               </span>
               <button
                 className="flex items-center gap-2 bg-gray-800 hover:bg-red-600 text-gray-300 hover:text-white px-3 py-1.5 rounded-md transition-all text-xs font-medium border border-gray-700 hover:border-red-500"
-                onClick={() => alert("Logout clicked")}
+                onClick={handleLogout}
               >
                 <LogOut size={14} />
                 Logout
@@ -115,6 +125,7 @@ export default function AdminDashboardLayout({
         </div>
       </header>
 
+      {/* Navigasi Tab */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm w-full">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav
@@ -128,13 +139,13 @@ export default function AdminDashboardLayout({
                   key={tab.href}
                   href={tab.href}
                   className={`
-                                        group inline-flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-all
-                                        ${
-                                          isActive
-                                            ? "border-blue-600 text-blue-600 bg-blue-50/50"
-                                            : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50 hover:border-gray-300"
-                                        }
-                                    `}
+                    group inline-flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-all
+                    ${
+                      isActive
+                        ? "border-blue-600 text-blue-600 bg-blue-50/50"
+                        : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50 hover:border-gray-300"
+                    }
+                  `}
                 >
                   <span
                     className={`${
@@ -153,6 +164,7 @@ export default function AdminDashboardLayout({
         </div>
       </div>
 
+      {/* Main Content */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {children}
       </main>

@@ -2,7 +2,13 @@
 
 import { useState, useEffect } from "react";
 import type { Portfolio } from "@/lib/types";
-import { portfolioService } from "@/services/portfolioService";
+import {
+  fetchPortfoliosAction,
+  createPortfolioAction,
+  updatePortfolioAction,
+  updatePortfolioStatusAction,
+  deletePortfolioAction,
+} from "@/app/actions/portfolio-actions";
 import { Trash2, Plus, Eye, EyeOff, Loader2, Pencil } from "lucide-react";
 
 // Ambil Base URL dari Env (Pastikan di .env tidak diakhiri /api)
@@ -51,9 +57,14 @@ export default function PortfolioPage() {
   const fetchPortfolios = async () => {
     try {
       setIsLoading(true);
-      const data = await portfolioService.getAllPortfolios();
-      setPortfolios(data);
-      setError(null);
+      const result = await fetchPortfoliosAction();
+
+      if (result.success && result.data) {
+        setPortfolios(result.data);
+        setError(null);
+      } else {
+        setError(result.message || "Gagal memuat data portfolio.");
+      }
     } catch (err: any) {
       console.error(err);
       setError("Gagal memuat data portfolio. Pastikan backend sudah jalan.");
@@ -115,15 +126,20 @@ export default function PortfolioPage() {
         dataToSend.append("photo", selectedFile);
       }
 
+      let result;
       if (isEditing) {
-        await portfolioService.updatePortfolio(formData.id, dataToSend);
+        result = await updatePortfolioAction(formData.id, dataToSend);
       } else {
-        await portfolioService.createPortfolio(dataToSend);
+        result = await createPortfolioAction(dataToSend);
       }
 
-      await fetchPortfolios();
-      setIsModalOpen(false);
-      resetForm();
+      if (result.success) {
+        await fetchPortfolios();
+        setIsModalOpen(false);
+        resetForm();
+      } else {
+        alert(result.message || "Gagal menyimpan portfolio");
+      }
     } catch (err: any) {
       alert(err.message || "Gagal menyimpan portfolio");
     } finally {
@@ -134,8 +150,12 @@ export default function PortfolioPage() {
   const handleDelete = async (id: string) => {
     if (confirm("Hapus portfolio ini?")) {
       try {
-        await portfolioService.deletePortfolio(id);
-        setPortfolios(portfolios.filter((p) => p.id !== id));
+        const result = await deletePortfolioAction(id);
+        if (result.success) {
+          setPortfolios(portfolios.filter((p) => p.id !== id));
+        } else {
+          alert(result.message || "Gagal menghapus portfolio");
+        }
       } catch (err) {
         alert("Gagal menghapus portfolio");
       }
@@ -144,15 +164,31 @@ export default function PortfolioPage() {
 
   const toggleHomepage = async (portfolio: Portfolio) => {
     try {
-      const updated = await portfolioService.updatePortfolio(portfolio.id, {
+      const payload = {
         ...portfolio,
         isShown: !portfolio.isShown,
-      });
+      };
 
+      // Use optimistic update
+      const updated = { ...portfolio, isShown: !portfolio.isShown };
       setPortfolios(
         portfolios.map((p) => (p.id === portfolio.id ? updated : p))
       );
+
+      const result = await updatePortfolioStatusAction(portfolio.id, payload);
+
+      if (!result.success) {
+        // Revert if failed
+        setPortfolios(
+          portfolios.map((p) => (p.id === portfolio.id ? portfolio : p))
+        );
+        alert(result.message || "Gagal mengupdate status");
+      }
     } catch (err) {
+      // Revert if failed
+      setPortfolios(
+        portfolios.map((p) => (p.id === portfolio.id ? portfolio : p))
+      );
       alert("Gagal mengupdate status");
     }
   };
@@ -258,11 +294,10 @@ export default function PortfolioPage() {
               <div className="flex justify-between items-center pt-3 border-t border-gray-100">
                 <button
                   onClick={() => toggleHomepage(item)}
-                  className={`text-xs flex items-center gap-1.5 font-bold px-3 py-1.5 rounded-full transition-colors ${
-                    item.isShown
+                  className={`text-xs flex items-center gap-1.5 font-bold px-3 py-1.5 rounded-full transition-colors ${item.isShown
                       ? "bg-green-100 text-green-700"
                       : "bg-gray-100 text-black hover:bg-gray-200"
-                  }`}
+                    }`}
                 >
                   {item.isShown ? <Eye size={14} /> : <EyeOff size={14} />}
                   {item.isShown ? "Visible" : "Hidden"}

@@ -7,58 +7,36 @@ import { ImageWithFallback } from "@/components/ui/image-with-fallback";
 import Link from "next/link";
 import { CustomButton } from "@/components/ui/custom-button";
 import { UserMenu } from "@/components/layout/user-menu";
-import type { User, NavItem } from "@/lib/types";
-import { UserRole } from "@/lib/types";
+import type { NavItem } from "@/lib/types";
+import { UserRole } from "@/lib/types"; // Keeping UserRole for type casting if needed
 import { usePathname, useRouter } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
 
 export function Navbar() {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
-
-  const [user, setUser] = useState<User | null>(null);
+  const { data: session, status } = useSession();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-
-    const token = localStorage.getItem("token");
-
-    if (token) {
-      const storedName = localStorage.getItem("userName") || "Admin";
-      // Logic role disederhanakan, pastikan UserRole enum sesuai
-      const storedRole =
-        (localStorage.getItem("userRole") as UserRole) || UserRole.ADMIN;
-
-      // Set user data agar navbar berubah tampilan
-      setUser({
-        id: "current",
-        name: storedName,
-        role: storedRole,
-        email: "",
-        token: token,
-      });
-    } else {
-      setUser(null);
-    }
   }, []);
 
-  // Fungsi Logout
-  const handleLogout = () => {
-    // Hapus semua data sesi
-    localStorage.removeItem("token");
-    localStorage.removeItem("userName");
-    localStorage.removeItem("userRole");
+  // Map session user to component User type
+  const user = session?.user
+    ? {
+        id: session.user.id || "current",
+        name: session.user.name || "User",
+        email: session.user.email || "",
+        role: (session.user.role as UserRole) || UserRole.GUEST,
+      }
+    : null;
 
-    // Update state jadi null
-    setUser(null);
-
-    // Tutup menu mobile jika terbuka
+  // Global Logout Function
+  const handleLogout = async () => {
     setIsMenuOpen(false);
-
-    // Arahkan ke halaman login
-    router.push("/login");
-    router.refresh();
+    await signOut({ callbackUrl: "/login" });
   };
 
   const menuItems: NavItem[] = [

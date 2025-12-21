@@ -19,28 +19,38 @@ export const authConfig: NextAuthConfig = {
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        idToken: { label: "Firebase Token", type: "text" },
       },
       async authorize(credentials) {
         try {
-          // Validate credentials
-          const validatedFields = loginSchema.safeParse(credentials);
+          let endpoint = "";
+          let body = {};
+          
+          if (credentials?.idToken) {
+            // Google Sign-In flow
+            endpoint = `${BACKEND_API_URL}/google-login`;
+            body = { idToken: credentials.idToken };
+          } else {
+            const validatedFields = loginSchema.safeParse(credentials);
+  
+            if (!validatedFields.success) {
+              console.log("❌ Validation failed:", validatedFields.error);
+              return null;
+            }
 
-          if (!validatedFields.success) {
-            console.log("❌ Validation failed:", validatedFields.error);
-            return null;
+            endpoint = `${BACKEND_API_URL}/login`;
+            body = validatedFields.data;
           }
-
-          const { email, password } = validatedFields.data;
-
-          console.log("🔵 Calling backend:", `${BACKEND_API_URL}/login`);
-
+          
+          console.log("🔵 Calling backend:", `${endpoint}`);
+          
           // Call backend login endpoint
-          const response = await fetch(`${BACKEND_API_URL}/login`, {
+          const response = await fetch(endpoint, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify(body),
           });
 
           console.log("🔵 Response status:", response.status, response.ok);
@@ -97,9 +107,6 @@ export const authConfig: NextAuthConfig = {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
         session.user.profilePicture = token.profilePicture as string;
-
-
-        session.accessToken = token.accessToken as string;
       }
       return session;
     },

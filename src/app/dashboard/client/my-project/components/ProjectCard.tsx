@@ -11,8 +11,20 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project }: ProjectCardProps) {
-    const statusConfig = getStatusConfig(project.status);
-    const needsReview = project.status === 'attention';
+    // Mapping Backend Data to UI
+    const title = project.name;
+    const location = project.location?.address || 'Unknown Location';
+    const image = project.image || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80'; // Fallback
+    const workPhase = project.workPhase || 'LEAD'; 
+    const statusLabel = project.statusLabel || project.status; // Use status as label if no specific label
+    const lastUpdate = project.lastUpdate || 'Recently';
+
+    // Status Config
+    // Ensure mapping exists, or provide default
+    const statusConfig = getStatusConfig(project.status as any) || getStatusConfig('new'); 
+    
+    // Permission Check
+    // Example: const canEdit = project.permissions?.canEdit;
 
     return (
         <Link 
@@ -23,35 +35,35 @@ export function ProjectCard({ project }: ProjectCardProps) {
                 {/* Image */}
                 <div className="relative h-40 overflow-hidden">
                     <Image
-                        src={project.image}
-                        alt={project.title}
+                        src={image}
+                        alt={title}
                         fill
                         className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     {/* Status Badge */}
                     <div className={`absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1 ${statusConfig.bg} ${statusConfig.textClass} text-xs font-medium rounded-full`}>
                         {statusConfig.icon}
-                        <span>{project.statusLabel}</span>
+                        <span>{statusLabel}</span>
                     </div>
                 </div>
 
                 {/* Content */}
                 <div className="p-4">
                     <h3 className="font-semibold text-slate-800 truncate mb-1 group-hover:text-[#8CC540] transition-colors">
-                        {project.title}
+                        {title}
                     </h3>
                     <div className="flex items-center gap-1.5 text-slate-500 text-sm mb-2">
                         <MapPin size={14} />
-                        <span className="truncate">{project.location}</span>
+                        <span className="truncate">{location}</span>
                     </div>
 
                     {/* Work Phase Badge */}
                     <div className="mb-3">
                         <span 
                             className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-md text-white"
-                            style={{ backgroundColor: WORK_PHASE_LABELS[project.workPhase].color }}
+                            style={{ backgroundColor: (WORK_PHASE_LABELS[workPhase] || WORK_PHASE_LABELS['LEAD']).color }}
                         >
-                            {WORK_PHASE_LABELS[project.workPhase].label}
+                            {(WORK_PHASE_LABELS[workPhase] || WORK_PHASE_LABELS['LEAD']).label}
                         </span>
                     </div>
 
@@ -76,10 +88,12 @@ export function ProjectCard({ project }: ProjectCardProps) {
                     <div className="flex items-center justify-between">
                         <span className="text-xs text-gray-400 flex items-center gap-1">
                             <Clock size={12} />
-                            {project.lastUpdate}
+                            {lastUpdate}
                         </span>
 
-                        {needsReview && (
+                        {/* Permission-Gated Action: Review */}
+                        {/* Only show 'Review' if status is attention (logic retained) */}
+                        {project.status === 'attention' && (
                             <span 
                                 className="px-3 py-1.5 text-white text-xs font-semibold rounded-lg"
                                 style={{ backgroundColor: BRAND.primary }}

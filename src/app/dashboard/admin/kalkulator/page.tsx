@@ -11,6 +11,10 @@ import {
   X,
   Loader2,
 } from "lucide-react";
+import {
+  fetchCalculatorDataAction,
+  saveCalculatorSettingsAction,
+} from "@/app/actions/calculator-actions";
 
 interface CalculatorSettings {
   materials: {
@@ -61,61 +65,26 @@ export default function CalculatorPage() {
 
   // === 1. LOAD DATA DARI API ===
   useEffect(() => {
-    // Tunggu sampai status authentikasi selesai loading
     if (status === "loading") return;
 
     const fetchData = async () => {
       try {
         setIsLoading(true);
 
-        const token = session?.accessToken;
+        const result = await fetchCalculatorDataAction();
 
-        const headers: HeadersInit = {
-          "Content-Type": "application/json",
-        };
+        if (result.success && result.data) {
+          const { settings, services } = result.data;
 
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
-        }
+          setSettings(settings);
+          setServices(services);
 
-        const [settingsRes, servicesRes] = await Promise.all([
-          fetch(`${API_URL}/calculator/settings`, { headers }),
-          fetch(`${API_URL}/services`, { headers }),
-        ]);
-
-        if (!settingsRes.ok) {
-          console.error("Gagal load settings:", settingsRes.status);
-        } else {
-          const settingsData = await settingsRes.json();
-          const realData = settingsData.data || settingsData;
-
-          if (realData) {
-            setSettings({
-              materials: realData.materials || {
-                standard: 1.0,
-                premium: 1.4,
-                luxury: 1.8,
-              },
-              roomPrice: realData.pricePerRoom ?? 0,
-            });
-          }
-        }
-
-        if (!servicesRes.ok) {
-          console.error("Gagal load services:", servicesRes.status);
-        } else {
-          const servicesData = await servicesRes.json();
-          if (
-            servicesData.status === "ok" &&
-            Array.isArray(servicesData.data)
-          ) {
-            setServices(servicesData.data);
-            if (servicesData.data.length > 0) {
-              setSim((prev) => ({
-                ...prev,
-                serviceId: servicesData.data[0]._id,
-              }));
-            }
+          // Set default service ID
+          if (services.length > 0) {
+            setSim((prev) => ({
+              ...prev,
+              serviceId: services[0]._id,
+            }));
           }
         }
       } catch (error) {
@@ -126,40 +95,19 @@ export default function CalculatorPage() {
     };
 
     fetchData();
-  }, [API_URL, session, status]);
+  }, [status]);
 
   // === 2. SIMPAN KE API (PUT) ===
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // [SESUAI NEXT-AUTH.D.TS] Ambil token lagi untuk aksi simpan
-      const token = session?.accessToken;
+      const result = await saveCalculatorSettingsAction(settings);
 
-      if (!token) {
-        alert("Sesi tidak valid atau kadaluarsa. Silakan login ulang.");
-        return;
-      }
-
-      const payload = {
-        pricePerRoom: settings.roomPrice,
-        materials: settings.materials,
-      };
-
-      const res = await fetch(`${API_URL}/calculator/settings`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (res.ok) {
+      if (result.success) {
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
       } else {
-        const errData = await res.json();
-        alert(`Gagal menyimpan: ${errData.message || "Unauthorized"}`);
+        alert(`Gagal menyimpan: ${result.message}`);
       }
     } catch (error) {
       console.error("Error saving:", error);
@@ -428,11 +376,10 @@ export default function CalculatorPage() {
                     <button
                       key={m}
                       onClick={() => setSim({ ...sim, material: m })}
-                      className={`flex-1 py-2 text-xs rounded-md border capitalize transition-all ${
-                        sim.material === m
-                          ? "bg-blue-600 text-white border-blue-600 shadow-md"
-                          : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
-                      }`}
+                      className={`flex-1 py-2 text-xs rounded-md border capitalize transition-all ${sim.material === m
+                        ? "bg-blue-600 text-white border-blue-600 shadow-md"
+                        : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                        }`}
                     >
                       {m} <br />{" "}
                       <span className="text-[10px] opacity-80">
@@ -481,8 +428,8 @@ export default function CalculatorPage() {
                   <span className="font-medium">
                     {formatRupiah(
                       sim.area *
-                        getSelectedServicePrice() *
-                        settings.materials[sim.material]
+                      getSelectedServicePrice() *
+                      settings.materials[sim.material]
                     )}
                   </span>
                 </div>
