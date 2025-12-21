@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 interface Service {
-  id: number;
+  id: string | number;
   name: string;
   title?: string; // Menjaga kompatibilitas data
   description: string;
@@ -161,15 +161,47 @@ export default function ServicesPage() {
 
   useEffect(() => {
     setIsMounted(true);
-    setServices(getServices());
 
-    const handleUpdate = () => setServices(getServices());
-    window.addEventListener("servicesUpdated", handleUpdate);
-    window.addEventListener("storage", handleUpdate);
-    return () => {
-      window.removeEventListener("servicesUpdated", handleUpdate);
-      window.removeEventListener("storage", handleUpdate);
+    const fetchServices = async () => {
+      try {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL;
+        if (!API_URL) return;
+
+        const res = await fetch(`${API_URL}/services/shown`, {
+          cache: "no-store",
+        });
+        const response = await res.json();
+
+        if (
+          res.ok &&
+          response.status === "ok" &&
+          Array.isArray(response.data)
+        ) {
+          const mappedServices: Service[] = response.data
+            .filter((item: any) => item.isShown) // Hanya tampilkan yang statusnya Shown
+            .map((item: any) => ({
+              id: item.id || item._id,
+              name: item.title, // Map title ke name
+              title: item.title,
+              description: item.description,
+              price: Number(item.price).toLocaleString("id-ID"), // Format price
+              features: item.features || [],
+              imageUrl: item.image,
+              image: item.image,
+              category: item.category,
+              popular: item.isPopular || false,
+            }));
+
+          setServices(mappedServices);
+        }
+      } catch (error) {
+        console.error("Gagal mengambil data services:", error);
+        // Fallback ke data static jika gagal (opsional, saat ini biarkan kosong atau pakai getServices())
+        setServices(getServices());
+      }
     };
+
+    fetchServices();
   }, []);
 
   const categories = [

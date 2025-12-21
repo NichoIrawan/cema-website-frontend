@@ -10,7 +10,7 @@ const loginSchema = z.object({
 });
 
 // Backend API base URL
-const BACKEND_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const BACKEND_API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export const authConfig: NextAuthConfig = {
   providers: [
@@ -56,7 +56,6 @@ export const authConfig: NextAuthConfig = {
 
           // Actual backend returns: { status: "success", token: "...", id: "...", role: "...", message: "..." }
           if (data.status === "success" && data.token && data.id) {
-            console.log("✅ Login successful for user ID:", data.id);
             return {
               id: data.id,
               name: data.name || data.email || "User", // Fallback if name not provided
@@ -80,12 +79,9 @@ export const authConfig: NextAuthConfig = {
     }),
   ],
   callbacks: {
-    /**
-     * JWT Callback: Persist backend accessToken in NextAuth JWT
-     * This runs when the JWT is created or updated
-     */
+    
     async jwt({ token, user }) {
-      // Initial sign in
+
       if (user) {
         token.id = user.id;
         token.role = user.role;
@@ -95,11 +91,7 @@ export const authConfig: NextAuthConfig = {
       return token;
     },
 
-    /**
-     * Session Callback: Expose user info to the session
-     * IMPORTANT: We do NOT expose the accessToken to the client session
-     * It stays in the JWT token which is httpOnly
-     */
+  
     async session({ session, token }) {
       if (token) {
         session.user.id = token.id as string;
