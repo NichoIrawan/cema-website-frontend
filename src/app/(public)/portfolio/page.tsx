@@ -21,15 +21,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../../../components/ui/dialog';
-
-interface Portfolio {
-  id: number;
-  title: string;
-  category: string;
-  imageUrl: string;
-  description: string;
-  completedDate: string;
-}
+import { Portfolio } from '@/lib/types';
+import { portfolioService } from '@/services/portfolioService';
 
 export default function PortfolioPage() {
   const router = useRouter();
@@ -37,59 +30,33 @@ export default function PortfolioPage() {
   const [selectedPortfolio, setSelectedPortfolio] = useState<Portfolio | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [gridView, setGridView] = useState<'2' | '3'>('3');
+  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Get portfolios from localStorage
-  const getPortfolios = (): Portfolio[] => {
-    if (typeof window === 'undefined') return [];
-    const stored = localStorage.getItem('portfolios');
-    if (stored) {
-      return JSON.parse(stored);
-    }
-    return [
-      {
-        id: 1,
-        title: 'Modern Minimalist House',
-        category: 'Residential',
-        imageUrl: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBtaW5pbWFsaXN0JTIwaG91c2V8ZW58MXx8fHwxNzYxOTMyMDAwfDA&ixlib=rb-4.1.0&q=80&w=1080',
-        description: 'A beautiful modern minimalist house with clean lines and open spaces',
-        completedDate: '2025-09-15',
-      },
-      {
-        id: 2,
-        title: 'Corporate Office Design',
-        category: 'Commercial',
-        imageUrl: 'https://images.unsplash.com/photo-1497366216548-37526070297c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb3Jwb3JhdGUlMjBvZmZpY2V8ZW58MXx8fHwxNzYxOTMyMDAwfDA&ixlib=rb-4.1.0&q=80&w=1080',
-        description: 'Contemporary office space design for tech company with collaborative zones',
-        completedDate: '2025-08-20',
-      },
-      {
-        id: 3,
-        title: 'Luxury Villa Interior',
-        category: 'Interior',
-        imageUrl: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsdXh1cnklMjB2aWxsYXxlbnwxfHx8fDE3NjE5MzIwMDB8MA&ixlib=rb-4.1.0&q=80&w=1080',
-        description: 'High-end interior design for luxury villa with premium materials',
-        completedDate: '2025-10-05',
-      },
-    ];
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+  const getImageUrl = (photoUrl: string) => {
+    if (!photoUrl) return 'https://placehold.co/600x400?text=No+Image';
+    if (photoUrl.startsWith('data:')) return photoUrl;
+    if (photoUrl.startsWith('http')) return photoUrl;
+    return `${API_URL}/uploads/${photoUrl}`;
   };
 
-  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
-
-  // Initialize portfolios on client-side and update when localStorage changes
   useEffect(() => {
-    setPortfolios(getPortfolios());
-
-    const handlePortfolioUpdate = () => {
-      setPortfolios(getPortfolios());
+    const fetchPortfolios = async () => {
+      try {
+        setIsLoading(true);
+        const data = await portfolioService.getAllPortfolios();
+        // Filter only shown portfolios
+        setPortfolios(data.filter((p) => p.isShown));
+      } catch (error) {
+        console.error('Failed to fetch portfolios:', error);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    window.addEventListener('portfolioUpdated', handlePortfolioUpdate);
-    window.addEventListener('storage', handlePortfolioUpdate);
-
-    return () => {
-      window.removeEventListener('portfolioUpdated', handlePortfolioUpdate);
-      window.removeEventListener('storage', handlePortfolioUpdate);
-    };
+    fetchPortfolios();
   }, []);
 
   // Get unique categories
@@ -98,8 +65,8 @@ export default function PortfolioPage() {
   // Filter portfolios
   const filteredPortfolios = portfolios.filter((portfolio) => {
     const matchesCategory = selectedCategory === 'All' || portfolio.category === selectedCategory;
-    const matchesSearch = portfolio.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         portfolio.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = portfolio.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      portfolio.description.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
@@ -114,7 +81,7 @@ export default function PortfolioPage() {
       <section className="relative pt-32 pb-20 bg-gradient-to-br from-[#8CC55A]/10 via-white to-[#E2B546]/10 overflow-hidden">
         <div className="absolute top-20 left-10 w-72 h-72 bg-[#8CC55A]/10 rounded-full blur-3xl"></div>
         <div className="absolute bottom-20 right-10 w-96 h-96 bg-[#E2B546]/10 rounded-full blur-3xl"></div>
-        
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -168,11 +135,10 @@ export default function PortfolioPage() {
                   <motion.button
                     key={category}
                     onClick={() => setSelectedCategory(category)}
-                    className={`px-4 py-2 rounded-lg transition-all ${
-                      selectedCategory === category
+                    className={`px-4 py-2 rounded-lg transition-all ${selectedCategory === category
                         ? 'bg-[#8CC55A] text-white shadow-md'
                         : 'bg-gray-100 text-[#868686] hover:bg-gray-200'
-                    }`}
+                      }`}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
@@ -184,11 +150,10 @@ export default function PortfolioPage() {
                 <div className="ml-auto flex gap-2">
                   <motion.button
                     onClick={() => setGridView('2')}
-                    className={`p-2 rounded-lg transition-all ${
-                      gridView === '2'
+                    className={`p-2 rounded-lg transition-all ${gridView === '2'
                         ? 'bg-[#8CC55A] text-white'
                         : 'bg-gray-100 text-[#868686] hover:bg-gray-200'
-                    }`}
+                      }`}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
@@ -196,11 +161,10 @@ export default function PortfolioPage() {
                   </motion.button>
                   <motion.button
                     onClick={() => setGridView('3')}
-                    className={`p-2 rounded-lg transition-all ${
-                      gridView === '3'
+                    className={`p-2 rounded-lg transition-all ${gridView === '3'
                         ? 'bg-[#8CC55A] text-white'
                         : 'bg-gray-100 text-[#868686] hover:bg-gray-200'
-                    }`}
+                      }`}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
@@ -221,7 +185,11 @@ export default function PortfolioPage() {
       {/* Portfolio Grid */}
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {filteredPortfolios.length === 0 ? (
+          {isLoading ? (
+            <div className="flex justify-center py-20">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#8CC55A]"></div>
+            </div>
+          ) : filteredPortfolios.length === 0 ? (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -243,9 +211,8 @@ export default function PortfolioPage() {
             </motion.div>
           ) : (
             <div
-              className={`grid grid-cols-1 ${
-                gridView === '3' ? 'md:grid-cols-2 lg:grid-cols-3' : 'md:grid-cols-2'
-              } gap-8`}
+              className={`grid grid-cols-1 ${gridView === '3' ? 'md:grid-cols-2 lg:grid-cols-3' : 'md:grid-cols-2'
+                } gap-8`}
             >
               <AnimatePresence mode="popLayout">
                 {filteredPortfolios.map((portfolio, index) => (
@@ -263,8 +230,8 @@ export default function PortfolioPage() {
                     {/* Image */}
                     <div className="relative h-64 overflow-hidden">
                       <ImageWithFallback
-                        src={portfolio.imageUrl}
-                        alt={portfolio.title}
+                        src={getImageUrl(portfolio.photoUrl)}
+                        alt={portfolio.displayName}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
@@ -273,7 +240,7 @@ export default function PortfolioPage() {
                           <ArrowRight size={20} />
                         </div>
                       </div>
-                      
+
                       {/* Category Badge */}
                       <div className="absolute top-4 left-4 px-4 py-2 bg-[#8CC55A] text-white rounded-lg shadow-lg">
                         {portfolio.category}
@@ -282,15 +249,15 @@ export default function PortfolioPage() {
 
                     {/* Content */}
                     <div className="p-6">
-                      <h3 className="text-[#333333] mb-2">{portfolio.title}</h3>
+                      <h3 className="text-[#333333] mb-2">{portfolio.displayName}</h3>
                       <p className="text-[#868686] mb-4 line-clamp-2">
                         {portfolio.description}
                       </p>
-                      
+
                       {/* Date */}
                       <div className="flex items-center gap-2 text-[#868686]">
                         <Calendar size={16} />
-                        <span>{formatDate(portfolio.completedDate)}</span>
+                        <span>{formatDate(portfolio.endDate)}</span>
                       </div>
                     </div>
                   </motion.div>
@@ -345,19 +312,19 @@ export default function PortfolioPage() {
             <>
               <DialogHeader>
                 <DialogTitle className="text-2xl text-[#333333]">
-                  {selectedPortfolio.title}
+                  {selectedPortfolio.displayName}
                 </DialogTitle>
                 <DialogDescription className="text-[#868686]">
                   Detail lengkap portfolio proyek
                 </DialogDescription>
               </DialogHeader>
-              
+
               <div className="space-y-6">
                 {/* Image */}
                 <div className="relative h-64 rounded-lg overflow-hidden">
                   <ImageWithFallback
-                    src={selectedPortfolio.imageUrl}
-                    alt={selectedPortfolio.title}
+                    src={getImageUrl(selectedPortfolio.photoUrl)}
+                    alt={selectedPortfolio.displayName}
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -374,7 +341,7 @@ export default function PortfolioPage() {
                     <div className="text-[#868686] mb-2">Tanggal Selesai</div>
                     <div className="flex items-center gap-2 text-[#333333]">
                       <Calendar size={20} className="text-[#8CC55A]" />
-                      <span>{formatDate(selectedPortfolio.completedDate)}</span>
+                      <span>{formatDate(selectedPortfolio.endDate)}</span>
                     </div>
                   </div>
                 </div>
