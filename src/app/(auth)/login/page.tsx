@@ -2,133 +2,72 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
-import { auth, googleProvider } from "@/lib/firebase"; // Pastikan path ini sesuai
-import { signInWithPopup } from "firebase/auth";
+import { signIn } from "next-auth/react";
 import "./login.css";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
 
   // --- STATE ---
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({ email: "", password: "" });
+  const [isLoading, setIsLoading] = useState(false);
 
-  // State untuk Popup Manual (Tanpa library tambahan)
+  // State untuk Popup Manual
   const [popup, setPopup] = useState({
     show: false,
     message: "",
     type: "success", // 'success' atau 'error'
   });
 
-  // Base URL dari Environment Variable
-  const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
   // --- HELPER UNTUK TUTUP POPUP ---
   const closePopup = () => {
     setPopup({ ...popup, show: false });
     // Jika login sukses, arahkan ke dashboard setelah popup ditutup
     if (popup.type === "success") {
-      router.push("/dashboard");
+      router.push(callbackUrl);
+      router.refresh();
     }
   };
 
-  // --- GOOGLE LOGIN HANDLER ---
-  const handleGoogleLogin = async () => {
-    try {
-      // 1. Trigger Google Popup
-      const result = await signInWithPopup(auth, googleProvider);
-
-      // 2. Ambil ID Token
-      const idToken = await result.user.getIdToken();
-
-      // 3. Kirim ke Backend
-      const res = await fetch(`${API_URL}/google-login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ idToken }),
-      });
-
-      const data = await res.json();
-
-      if (data && data.status === "ok") {
-        localStorage.setItem("token", data.token);
-        // Tampilkan Popup Sukses
-        setPopup({
-          show: true,
-          message: `Login Berhasil! Selamat datang ${
-            data.user?.name || "User"
-          }`,
-          type: "success",
-        });
-      } else {
-        // Tampilkan Popup Gagal
-        setPopup({
-          show: true,
-          message: data?.error || "Google login gagal",
-          type: "error",
-        });
-      }
-    } catch (error: any) {
-      console.error("Google login error:", error);
-      if (error.code !== "auth/popup-closed-by-user") {
-        setPopup({
-          show: true,
-          message: "Terjadi kesalahan saat login Google.",
-          type: "error",
-        });
-      }
-    }
-  };
-
-  // --- REGULAR EMAIL/PASSWORD HANDLER ---
+  // --- REGULAR EMAIL/PASSWORD HANDLER (NextAuth) ---
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
 
     try {
-      const res = await fetch(`${API_URL}/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+      const result = await signIn("credentials", {
+        email: formData.email,
+        password: formData.password,
+        redirect: false,
       });
 
-      if (!res.ok) {
+      if (result?.error) {
         setPopup({
           show: true,
-          message: `Request gagal: ${res.status}`,
+          message: "Login gagal. Periksa email dan password Anda.",
           type: "error",
         });
-        return;
-      }
-
-      const data = await res.json();
-
-      if (data && data.status === "ok") {
-        localStorage.setItem("token", data.token);
-        // Tampilkan Popup Sukses
+      } else if (result?.ok) {
         setPopup({
           show: true,
-          message: `Login Berhasil! Selamat datang ${data.role || "User"}`,
+          message: "Login Berhasil! Selamat datang.",
           type: "success",
-        });
-      } else {
-        // Tampilkan Popup Gagal
-        setPopup({
-          show: true,
-          message: data?.error || "Login gagal, cek email/password.",
-          type: "error",
         });
       }
     } catch (error) {
-      console.error("Gagal menghubungi server:", error);
+      console.error("Login error:", error);
       setPopup({
         show: true,
-        message: "Terjadi kesalahan koneksi ke server.",
+        message: "Terjadi kesalahan saat login.",
         type: "error",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -143,7 +82,7 @@ export default function LoginPage() {
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: "rgba(0,0,0,0.5)", // Layar hitam transparan
+            backgroundColor: "rgba(0,0,0,0.5)",
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
@@ -238,6 +177,7 @@ export default function LoginPage() {
                   setFormData({ ...formData, email: e.target.value })
                 }
                 required
+                disabled={isLoading}
               />
             </div>
 
@@ -260,6 +200,7 @@ export default function LoginPage() {
                   setFormData({ ...formData, password: e.target.value })
                 }
                 required
+                disabled={isLoading}
               />
               <button
                 type="button"
@@ -288,35 +229,14 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <button type="submit" className="continue-btn">
-              Continue
+            <button
+              type="submit"
+              className="continue-btn"
+              disabled={isLoading}
+              style={{ opacity: isLoading ? 0.7 : 1 }}
+            >
+              {isLoading ? "Loading..." : "Continue"}
             </button>
-
-            <div className="divider">Or</div>
-
-            <div className="social-login">
-              <button
-                type="button"
-                className="google-btn"
-                onClick={handleGoogleLogin}
-              >
-                <img
-                  src="/images/google.png"
-                  alt="Google"
-                  onError={(e) => (e.currentTarget.style.display = "none")}
-                />
-                Log in with Google
-              </button>
-
-              <button type="button" className="facebook-btn">
-                <img
-                  src="/images/facebook.png"
-                  alt="Facebook"
-                  onError={(e) => (e.currentTarget.style.display = "none")}
-                />
-                Log in with Facebook
-              </button>
-            </div>
 
             <p className="signup">
               New User?
