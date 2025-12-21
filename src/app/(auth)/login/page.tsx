@@ -153,13 +153,12 @@ export default function LoginPage() {
             <div className="divider">or continue with</div>
             <div className="social-login">
               <button type="button" className="google-btn" onClick={handleGoogleLogin} disabled={isLoading}>
-                <img src="/images/google-icon.png" alt="Google" /> Continue with Google
+                <img src="../images/google.png" alt="Google" /> Continue with Google
               </button>
               <button type="button" className="facebook-btn" onClick={() => signIn("facebook", { callbackUrl })}>
-                <img src="/images/facebook-icon.png" alt="Facebook" /> Continue with Facebook
+                <img src="../images/facebook.png" alt="Facebook" /> Continue with Facebook
               </button>
             </div>
-
             <p className="signup">
               New User? <Link href="/register" className="signup-link" style={{ marginLeft: "5px" }}>SIGN UP HERE</Link>
             </p>
