@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { Slider } from "../../components/ui/slider";
 import DesignQuizUser from "@/components/ui/DesignQuizUser";
+import { Portfolio } from "@/lib/types";
+import { portfolioService } from "@/services/portfolioService";
 
 // --- 1. Interface Data ---
 interface CalculatorSettings {
@@ -41,12 +43,7 @@ interface ServiceItemUI {
   color: string; // Properti UI tambahan
 }
 
-interface PortfolioItem {
-  id: number;
-  title: string;
-  category: string;
-  image: string;
-}
+
 
 interface Stat {
   number: string;
@@ -54,15 +51,26 @@ interface Stat {
 }
 
 export default function HomePage() {
-  const API_URL = process.env.NEXT_PUBLIC_API_URL;
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
   const onNavigate = (page: string) => {
     window.location.href = `/${page}`;
   };
 
+  const getImageUrl = (photoUrl: string) => {
+    if (!photoUrl) return "https://placehold.co/600x400?text=No+Image";
+    if (photoUrl.startsWith("data:")) return photoUrl;
+    if (photoUrl.startsWith("http")) return photoUrl;
+
+    // Logic from Admin: remove '/api' suffix if present to access /uploads correctly
+    const baseUrl = API_URL.replace(/\/api$/, "");
+    return `${baseUrl}/uploads/${photoUrl}`;
+  };
+
   // --- State Data API ---
   const [services, setServices] = useState<ServiceItemUI[]>([]);
   const [settings, setSettings] = useState<CalculatorSettings | null>(null);
+  const [portfolioItems, setPortfolioItems] = useState<Portfolio[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // --- Calculator State ---
@@ -82,13 +90,17 @@ export default function HomePage() {
 
         const headers: HeadersInit = { "Content-Type": "application/json" };
 
-        const [settingsRes, servicesRes] = await Promise.all([
+        const [settingsRes, servicesRes, portfoliosData] = await Promise.all([
           fetch(`${API_URL}/calculator/settings`, {
             headers,
             cache: "no-store",
           }),
           fetch(`${API_URL}/services/shown`, { headers, cache: "no-store" }),
+          portfolioService.getAllPortfolios(),
         ]);
+
+        // --- HANDLE PORTFOLIO ---
+        setPortfolioItems(portfoliosData.filter((p) => p.isShown));
 
         // --- 1. HANDLE SETTINGS (KALKULATOR) ---
         if (!settingsRes.ok) {
@@ -244,37 +256,7 @@ export default function HomePage() {
     { value: "luxury", label: "Luxury" },
   ];
 
-  // Mock Portfolio Items (Tetap statis sesuai request, fokus di kalkulator)
-  const portfolioItems: PortfolioItem[] = [
-    {
-      id: 1,
-      title: "Luxury Villa Design",
-      category: "Interior",
-      image:
-        "https://images.unsplash.com/photo-1581784878214-8d5596b98a01?q=80&w=1080",
-    },
-    {
-      id: 2,
-      title: "Modern Living Space",
-      category: "Interior",
-      image:
-        "https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?q=80&w=1080",
-    },
-    {
-      id: 3,
-      title: "Contemporary Kitchen",
-      category: "Interior",
-      image:
-        "https://images.unsplash.com/photo-1641823911769-c55f23c25143?q=80&w=1080",
-    },
-    {
-      id: 4,
-      title: "Elegant Bedroom",
-      category: "Interior",
-      image:
-        "https://images.unsplash.com/photo-1704428382583-c9c7c1e55d94?q=80&w=1080",
-    },
-  ];
+  // Mock Portfolio Items REMOVED - using API data
 
   return (
     <div className="min-h-screen">
@@ -340,8 +322,8 @@ export default function HomePage() {
                   alt="3D Interior Design"
                   className="w-full h-auto object-contain"
                   onError={(e) =>
-                    (e.currentTarget.src =
-                      "https://images.unsplash.com/photo-1600607686527-6fb886090705?q=80&w=600")
+                  (e.currentTarget.src =
+                    "https://images.unsplash.com/photo-1600607686527-6fb886090705?q=80&w=600")
                   }
                 />
               </div>
@@ -520,33 +502,39 @@ export default function HomePage() {
             </p>
           </motion.div>
 
-          <div className="flex gap-6 overflow-x-auto pb-8 scrollbar-hide snap-x snap-mandatory">
-            {portfolioItems.map((item: PortfolioItem, index: number) => (
-              <motion.div
-                key={item.id}
-                initial={{ opacity: 0, x: 50 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                whileHover={{ scale: 1.05 }}
-                className="flex-shrink-0 w-80 snap-center cursor-pointer"
-              >
-                <div className="relative h-96 rounded-lg overflow-hidden group">
-                  <ImageWithFallback
-                    src={item.image}
-                    alt={item.title}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-6">
-                    <div>
-                      <div className="text-[#8CC55A] mb-2">{item.category}</div>
-                      <h3 className="text-white">{item.title}</h3>
+          {isLoading ? (
+            <div className="flex justify-center py-10">
+              <Loader2 className="animate-spin text-[#8CC55A]" size={40} />
+            </div>
+          ) : (
+            <div className="flex gap-6 overflow-x-auto pb-8 scrollbar-hide snap-x snap-mandatory">
+              {portfolioItems.map((item, index) => (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, x: 50 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                  whileHover={{ scale: 1.05 }}
+                  className="flex-shrink-0 w-80 snap-center cursor-pointer"
+                >
+                  <div className="relative h-96 rounded-lg overflow-hidden group">
+                    <ImageWithFallback
+                      src={getImageUrl(item.photoUrl)}
+                      alt={item.displayName}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-6">
+                      <div>
+                        <div className="text-[#8CC55A] mb-2">{item.category}</div>
+                        <h3 className="text-white">{item.displayName}</h3>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
 
           <div className="text-center mt-8">
             <motion.button
@@ -625,11 +613,10 @@ export default function HomePage() {
                         <motion.button
                           key={service._id}
                           onClick={() => setSelectedServiceId(service._id)}
-                          className={`p-4 rounded-lg border-2 transition-colors flex flex-col items-center justify-center text-center h-full ${
-                            selectedServiceId === service._id
-                              ? "border-[#8CC55A] bg-[#8CC55A]/10"
-                              : "border-gray-200 hover:border-[#8CC55A]"
-                          }`}
+                          className={`p-4 rounded-lg border-2 transition-colors flex flex-col items-center justify-center text-center h-full ${selectedServiceId === service._id
+                            ? "border-[#8CC55A] bg-[#8CC55A]/10"
+                            : "border-gray-200 hover:border-[#8CC55A]"
+                            }`}
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                         >
@@ -656,11 +643,10 @@ export default function HomePage() {
                       <motion.button
                         key={option.value}
                         onClick={() => setMaterialType(option.value as any)}
-                        className={`p-4 rounded-lg border-2 transition-colors ${
-                          materialType === option.value
-                            ? "border-[#8CC55A] bg-[#8CC55A]/10"
-                            : "border-gray-200 hover:border-[#8CC55A]"
-                        }`}
+                        className={`p-4 rounded-lg border-2 transition-colors ${materialType === option.value
+                          ? "border-[#8CC55A] bg-[#8CC55A]/10"
+                          : "border-gray-200 hover:border-[#8CC55A]"
+                          }`}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                       >
