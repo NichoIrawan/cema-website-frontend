@@ -14,8 +14,16 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    // Optional: Add ABAC checks here based on role and department
-    // For now, we just check if user is authenticated
+    const userRole = session.user.role;
+    const path = request.nextUrl.pathname;
+
+    if (userRole === "client" && path.startsWith("/dashboard/admin")) {
+      return NextResponse.redirect(new URL("/dashboard/client", request.url));
+    }
+
+    if (userRole === "admin" && path.startsWith("/dashboard/client")) {
+      return NextResponse.redirect(new URL("/dashboard/admin", request.url));
+    }
   }
 
   return NextResponse.next();
