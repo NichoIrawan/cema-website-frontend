@@ -24,7 +24,7 @@ export const authConfig: NextAuthConfig = {
         try {
           // Validate credentials
           const validatedFields = loginSchema.safeParse(credentials);
-          
+
           if (!validatedFields.success) {
             console.log("❌ Validation failed:", validatedFields.error);
             return null;
@@ -79,7 +79,7 @@ export const authConfig: NextAuthConfig = {
     }),
   ],
   callbacks: {
-    
+
     async jwt({ token, user }) {
 
       if (user) {
@@ -91,15 +91,15 @@ export const authConfig: NextAuthConfig = {
       return token;
     },
 
-  
+
     async session({ session, token }) {
       if (token) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
         session.user.profilePicture = token.profilePicture as string;
-        
-        
-        session.accessToken = token.accessToken as string; 
+
+
+        session.accessToken = token.accessToken as string;
       }
       return session;
     },

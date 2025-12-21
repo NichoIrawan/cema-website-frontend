@@ -91,7 +91,7 @@ export interface ChatMessage {
     message: string;
     timestamp: Date;
     isAdmin: boolean;
-   
+
 
     read: boolean;
 }
@@ -163,14 +163,23 @@ export interface PaginatedResponse<T> {
     totalPages: number;
 }
 export interface Portfolio {
-    id: number;
-    title: string;
+    id: string; // Changed from number to string to match backend
+    displayName: string; // Was title
     category: string;
-    imageUrl: string;
+    photoUrl: string; // Was imageUrl
     description: string;
-    completedDate: string;
-    showOnHomepage: boolean;
-    isActive: boolean;
+    endDate: string; // Was completedDate
+    isShown: boolean; // Was showOnHomepage
+}
+
+export interface PortfolioRequest {
+    id: string;
+    displayName: string;
+    category: string;
+    description: string;
+    endDate: string;
+    isShown: boolean;
+    photoUrl?: File | string; // For upload
 }
 
 export interface ServiceItem {
