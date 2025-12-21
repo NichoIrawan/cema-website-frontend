@@ -105,7 +105,6 @@ export const authConfig: NextAuthConfig = {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
         session.user.profilePicture = token.profilePicture as string;
-        // Note: accessToken is NOT added to session.user to prevent client exposure
       }
       return session;
     },
