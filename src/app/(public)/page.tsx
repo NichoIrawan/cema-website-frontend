@@ -43,12 +43,7 @@ interface ServiceItemUI {
   color: string; // Properti UI tambahan
 }
 
-interface PortfolioItem {
-  id: number;
-  title: string;
-  category: string;
-  image: string;
-}
+
 
 interface Stat {
   number: string;
@@ -56,7 +51,7 @@ interface Stat {
 }
 
 export default function HomePage() {
-  const API_URL = process.env.NEXT_PUBLIC_API_URL;
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
   const onNavigate = (page: string) => {
     window.location.href = `/${page}`;
@@ -66,7 +61,9 @@ export default function HomePage() {
     if (!photoUrl) return "https://placehold.co/600x400?text=No+Image";
     if (photoUrl.startsWith("data:")) return photoUrl;
     if (photoUrl.startsWith("http")) return photoUrl;
-    return `${API_URL}/uploads/${photoUrl}`;
+    const finalUrl = `${API_URL}/uploads/${photoUrl}`;
+    console.log("Image URL Debug:", { photoUrl, API_URL, finalUrl });
+    return finalUrl;
   };
 
   // --- State Data API ---
