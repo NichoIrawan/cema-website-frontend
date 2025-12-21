@@ -12,6 +12,12 @@ import {
   CheckCircle,
   AlertCircle,
 } from "lucide-react";
+import {
+  fetchServicesAction,
+  createServiceAction,
+  deleteServiceAction,
+  updateServiceAction,
+} from "@/app/actions/service-actions";
 
 // Tipe Data
 interface ServiceItem {
@@ -74,19 +80,14 @@ export default function ServicesPage() {
 
   // --- FETCH DATA ---
   const fetchServices = async () => {
-    if (status !== "authenticated" || !session) return;
+    // Only fetch if session is loaded (even if unauthenticated, middleware might redirect, but safe to check)
+    if (status === "loading") return;
+
     setIsLoading(true);
     try {
-      // @ts-ignore
-      const token = session.user.accessToken || session.accessToken;
-      const res = await fetch(`${API_URL}/services`, {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: "no-store",
-      });
-
-      const response = await res.json();
-      if (res.ok && response.status === "ok") {
-        setServices(response.data);
+      const result = await fetchServicesAction();
+      if (result.success && result.data) {
+        setServices(result.data);
       }
     } catch (error) {
       console.error("Error fetching:", error);
@@ -122,9 +123,6 @@ export default function ServicesPage() {
 
     setIsLoading(true);
     try {
-      // @ts-ignore
-      const token = session?.user?.accessToken || session?.accessToken;
-
       const payload = {
         title: formData.title,
         category: formData.category,
@@ -136,18 +134,9 @@ export default function ServicesPage() {
         features: [],
       };
 
-      const res = await fetch(`${API_URL}/services`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
+      const result = await createServiceAction(payload);
 
-      const data = await res.json();
-
-      if (res.ok && data.status === "ok") {
+      if (result.success) {
         setIsFormModalOpen(false);
         setFormData({
           title: "",
@@ -160,8 +149,8 @@ export default function ServicesPage() {
         fetchServices();
         showToast("Layanan berhasil disimpan!", "success");
       } else {
-        console.error("Gagal simpan:", data.message);
-        showToast(`Gagal menyimpan: ${data.message}`, "error");
+        console.error("Gagal simpan:", result.message);
+        showToast(`Gagal menyimpan: ${result.message}`, "error");
       }
     } catch (error: any) {
       console.error("Error saving:", error);
@@ -183,16 +172,9 @@ export default function ServicesPage() {
 
     setIsLoading(true);
     try {
-      // @ts-ignore
-      const token = session?.user?.accessToken || session?.accessToken;
+      const result = await deleteServiceAction(serviceToDelete);
 
-      // Request ke Backend (FIXED URL)
-      const res = await fetch(`${API_URL}/services/${serviceToDelete}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (res.ok || res.status === 404) {
+      if (result.success) {
         // Update Tampilan (Hapus baris dari tabel)
         setServices((prev) => prev.filter((s) => s.id !== serviceToDelete));
 
@@ -200,10 +182,8 @@ export default function ServicesPage() {
         setIsDeleteModalOpen(false);
         setServiceToDelete(null);
       } else {
-        // Hanya error beneran (misal Server Down / 500) yang kita log
-        const data = await res.json();
-        console.error("Gagal hapus:", data.message);
-        showToast("Gagal menghapus: " + data.message, "error");
+        console.error("Gagal hapus:", result.message);
+        showToast("Gagal menghapus: " + result.message, "error");
       }
     } catch (error) {
       console.error("Error connection deleting:", error);
@@ -214,15 +194,13 @@ export default function ServicesPage() {
   };
 
   // --- LOGIC TOGGLE STATUS (NEW) ---
+  // --- LOGIC TOGGLE STATUS (NEW) ---
   const handleToggleStatus = async (id: string, currentStatus: boolean) => {
     try {
       // Optimistic Update
       setServices((prev) =>
         prev.map((s) => (s.id === id ? { ...s, isShown: !currentStatus } : s))
       );
-
-      // @ts-ignore
-      const token = session?.user?.accessToken || session?.accessToken;
 
       // Kami berasumsi endpoint PUT /services/:id bisa menerima parsial update
       // Sesuaikan body dengan kebutuhan backend
@@ -236,22 +214,14 @@ export default function ServicesPage() {
         isShown: !currentStatus,
       };
 
-      const res = await fetch(`${API_URL}/services/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
+      const result = await updateServiceAction(id, payload);
 
-      if (!res.ok) {
+      if (!result.success) {
         // Revert changes if failed
         setServices((prev) =>
           prev.map((s) => (s.id === id ? { ...s, isShown: currentStatus } : s))
         );
-        const errData = await res.json();
-        showToast(`Gagal update status: ${errData.message}`, "error");
+        showToast(`Gagal update status: ${result.message}`, "error");
       }
     } catch (error) {
       console.error("Error toggle status:", error);

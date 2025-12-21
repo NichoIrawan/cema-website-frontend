@@ -15,7 +15,7 @@ export const portfolioService = {
     getAllPortfolios: async (): Promise<Portfolio[]> => {
         const headers = await getAuthHeaders();
         // Gunakan /api/portfolio (pastikan tidak dobel di .env)
-        const response = await fetch(`${API_URL}/portfolio`, { headers });
+        const response = await fetch(`${API_URL}/portfolio/shown`, { headers });
         const data = await response.json();
         return (data.data || []);
     },

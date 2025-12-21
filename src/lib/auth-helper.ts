@@ -18,12 +18,12 @@ export async function getBackendToken(): Promise<string | null> {
   const req = {
     headers: Object.fromEntries(headersList),
     cookies: Object.fromEntries(
-        cookieStore.getAll().map((c) => [c.name, c.value])
+      cookieStore.getAll().map((c) => [c.name, c.value])
     ),
   } as any;
 
-  const token = await getToken({ 
-    req, 
+  const token = await getToken({
+    req,
     secret: process.env.NEXTAUTH_SECRET,
     secureCookie: process.env.NODE_ENV === "production"
   });
