@@ -65,7 +65,7 @@ export interface Project {
 }
 
 // Schedule & Appointments
-export type ScheduleStatus = 'scheduled' | 'completed' | 'cancelled' | 'rescheduled';
+export type ScheduleStatus = 'scheduled' | 'done' | 'cancelled';
 
 export interface Schedule {
     id: string;
@@ -77,6 +77,15 @@ export interface Schedule {
     event: string;
     description?: string;
     status: ScheduleStatus;
+    isOnline?: boolean;
+    location?: {
+        address: string;
+        coordinates?: {
+            lat: number;
+            lng: number;
+        };
+    };
+    link?: string;
     createdAt?: Date;
 }
 
