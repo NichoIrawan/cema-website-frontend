@@ -14,17 +14,21 @@ export interface ProjectManager {
 }
 
 export interface Project {
-    id: number;
-    title: string;
-    location: string;
-    status: ProjectStatus;
+    _id: string; // Backend uses _id
+    id?: string; // Optional (frontend convenience)
+    name: string; // Backend sends 'name', mapped to 'title' in UI if needed
+    location: {
+        address: string;
+    }; 
+    status: ProjectStatus; // BE sends string, we might need mapping
     workPhase: WorkPhase;
     progress: number;
-    lastUpdate: string;
-    image: string;
-    statusLabel: string;
-    description?: string;
-    startDate: string;
-    targetDate: string;
-    pm: ProjectManager;
+    lastUpdate?: string; // Optional in BE
+    image?: string; // Optional
+    statusLabel?: string;
+    description: string;
+    startDate?: string;
+    targetDate?: string;
+    pm?: ProjectManager;
+    permissions?: any; // Dynamic permissions from backend
 }

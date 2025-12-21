@@ -14,6 +14,7 @@ import {
     LogOut,
     ShieldCheck
 } from 'lucide-react';
+import { useSession, signOut } from "next-auth/react";
 
 interface AdminDashboardLayoutProps {
     children: React.ReactNode;
@@ -21,6 +22,12 @@ interface AdminDashboardLayoutProps {
 
 export default function AdminDashboardLayout({ children }: AdminDashboardLayoutProps) {
     const pathname = usePathname();
+    const { data: session } = useSession();
+    
+    // Logout Handler
+    const handleLogout = async () => {
+        await signOut({ callbackUrl: "/" });
+    };
     
     // Menu Navigasi Admin
     const tabs = [
@@ -99,10 +106,10 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
                         </div>
                         
                         <div className="flex items-center gap-4">
-                            <span className="text-sm text-gray-300 hidden sm:block">Halo, Super Admin</span>
+                            <span className="text-sm text-gray-300 hidden sm:block">Halo, {session?.user?.name || "Admin"}</span>
                             <button 
                                 className="flex items-center gap-2 bg-gray-800 hover:bg-red-600 text-gray-300 hover:text-white px-3 py-1.5 rounded-md transition-all text-xs font-medium border border-gray-700 hover:border-red-500"
-                                onClick={() => alert('Logout clicked')}
+                                onClick={handleLogout}
                             >
                                 <LogOut size={14} />
                                 Logout

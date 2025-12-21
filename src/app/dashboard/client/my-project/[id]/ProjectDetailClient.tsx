@@ -21,7 +21,10 @@ interface ProjectDetailClientProps {
 export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
     const router = useRouter();
     const [activeTab, setActiveTab] = useState<'overview' | 'files'>('overview');
-    const statusConfig = getStatusConfig(project.status);
+    
+    // Safety Fallbacks
+    const statusConfig = getStatusConfig(project.status) || getStatusConfig('new');
+    const workPhaseConfig = WORK_PHASE_LABELS[project.workPhase] || WORK_PHASE_LABELS['LEAD'];
 
     const tabs = [
         { id: 'overview', label: 'Overview', icon: <LayoutGrid size={16} /> },
@@ -29,8 +32,8 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
     ] as const;
 
     const handleWhatsApp = () => {
-        const message = encodeURIComponent(`Halo ${project.pm.name}, saya ingin bertanya tentang proyek "${project.title}".`);
-        window.open(`https://wa.me/${project.pm.phone}?text=${message}`, '_blank');
+        const message = encodeURIComponent(`Halo ${project.pm?.name}, saya ingin bertanya tentang proyek "${project.name}".`);
+        window.open(`https://wa.me/${project.pm?.phone}?text=${message}`, '_blank');
     };
 
     const handleBack = () => {
@@ -51,7 +54,7 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
 
                 {/* Header - Title + Badge inline */}
                 <div className="flex flex-wrap items-center gap-3 mb-2">
-                    <h1 className="text-2xl md:text-3xl font-bold text-slate-800">{project.title}</h1>
+                    <h1 className="text-2xl md:text-3xl font-bold text-slate-800">{project.name}</h1>
                     <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 ${statusConfig.bg} ${statusConfig.textClass} text-sm font-medium rounded-full`}>
                         {statusConfig.icon}
                         <span>{project.statusLabel}</span>
@@ -62,22 +65,22 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
                 <div className="flex items-center gap-3 text-slate-500 mb-6">
                     <div className="flex items-center gap-1.5">
                         <MapPin size={16} />
-                        <span>{project.location}</span>
+                        <span>{project.location?.address || 'Unknown Location'}</span>
                     </div>
                     <span className="text-gray-300">•</span>
                     <span 
                         className="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-md text-white"
-                        style={{ backgroundColor: WORK_PHASE_LABELS[project.workPhase].color }}
+                        style={{ backgroundColor: workPhaseConfig.color }}
                     >
-                        Tahap: {WORK_PHASE_LABELS[project.workPhase].label}
+                        Tahap: {workPhaseConfig.label}
                     </span>
                 </div>
 
                 {/* Hero Image */}
                 <div className="relative h-64 md:h-80 rounded-2xl overflow-hidden mb-8 shadow-lg">
                     <Image
-                        src={project.image}
-                        alt={project.title}
+                        src={project.image || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80'}
+                        alt={project.name}
                         fill
                         className="object-cover"
                         priority
@@ -176,15 +179,15 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
                             <div className="flex items-center gap-3 mb-4">
                                 <div className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-gray-100">
                                     <Image
-                                        src={project.pm.avatar}
-                                        alt={project.pm.name}
+                                        src={project.pm?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80'}
+                                        alt={project.pm?.name || 'Project Manager'}
                                         fill
                                         className="object-cover"
                                     />
                                 </div>
                                 <div>
-                                    <p className="font-semibold text-slate-800">{project.pm.name}</p>
-                                    <p className="text-sm text-slate-500">{project.pm.role}</p>
+                                    <p className="font-semibold text-slate-800">{project.pm?.name || 'Unassigned'}</p>
+                                    <p className="text-sm text-slate-500">{project.pm?.role || 'Project Manager'}</p>
                                 </div>
                             </div>
 

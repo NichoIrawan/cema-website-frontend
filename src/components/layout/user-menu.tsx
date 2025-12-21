@@ -6,6 +6,7 @@ import Link from "next/link";
 import { CustomButton } from "@/components/ui/custom-button";
 import { useRouter } from "next/navigation";
 import { User, LayoutDashboard } from "lucide-react";
+import { signOut } from "next-auth/react";
 import type { User as UserType } from "@/lib/types";
 
 interface UserMenuProps {
@@ -44,10 +45,9 @@ export function UserMenu({ user }: UserMenuProps) {
     };
   }, [isOpen]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
+  const handleLogout = async () => {
     setIsOpen(false);
-    router.push("/login");
+    await signOut({ callbackUrl: "/login" });
   };
 
   return (
