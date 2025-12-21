@@ -39,7 +39,7 @@ export default function AdminDashboardLayout({ children }: AdminDashboardLayoutP
         },
         { 
             label: 'Portfolio', 
-            href: '/dashboard/admin/portofolio',
+            href: '/dashboard/admin/portfolio',
             icon: <Briefcase size={18} />,
             activeCheck: (path: string) => path.includes('/portfolio')
         },

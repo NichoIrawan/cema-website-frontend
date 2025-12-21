@@ -10,7 +10,7 @@ const loginSchema = z.object({
 });
 
 // Backend API base URL
-const BACKEND_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const BACKEND_API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export const authConfig: NextAuthConfig = {
   providers: [
@@ -19,28 +19,38 @@ export const authConfig: NextAuthConfig = {
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        idToken: { label: "Firebase Token", type: "text" },
       },
       async authorize(credentials) {
         try {
-          // Validate credentials
-          const validatedFields = loginSchema.safeParse(credentials);
+          let endpoint = "";
+          let body = {};
           
-          if (!validatedFields.success) {
-            console.log("❌ Validation failed:", validatedFields.error);
-            return null;
+          if (credentials?.idToken) {
+            // Google Sign-In flow
+            endpoint = `${BACKEND_API_URL}/google-login`;
+            body = { idToken: credentials.idToken };
+          } else {
+            const validatedFields = loginSchema.safeParse(credentials);
+  
+            if (!validatedFields.success) {
+              console.log("❌ Validation failed:", validatedFields.error);
+              return null;
+            }
+
+            endpoint = `${BACKEND_API_URL}/login`;
+            body = validatedFields.data;
           }
-
-          const { email, password } = validatedFields.data;
-
-          console.log("🔵 Calling backend:", `${BACKEND_API_URL}/login`);
-
+          
+          console.log("🔵 Calling backend:", `${endpoint}`);
+          
           // Call backend login endpoint
-          const response = await fetch(`${BACKEND_API_URL}/login`, {
+          const response = await fetch(endpoint, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify(body),
           });
 
           console.log("🔵 Response status:", response.status, response.ok);
@@ -56,7 +66,6 @@ export const authConfig: NextAuthConfig = {
 
           // Actual backend returns: { status: "success", token: "...", id: "...", role: "...", message: "..." }
           if (data.status === "success" && data.token && data.id) {
-            console.log("✅ Login successful for user ID:", data.id);
             return {
               id: data.id,
               name: data.name || data.email || "User", // Fallback if name not provided
@@ -80,12 +89,9 @@ export const authConfig: NextAuthConfig = {
     }),
   ],
   callbacks: {
-    /**
-     * JWT Callback: Persist backend accessToken in NextAuth JWT
-     * This runs when the JWT is created or updated
-     */
+
     async jwt({ token, user }) {
-      // Initial sign in
+
       if (user) {
         token.id = user.id;
         token.role = user.role;
@@ -95,11 +101,7 @@ export const authConfig: NextAuthConfig = {
       return token;
     },
 
-    /**
-     * Session Callback: Expose user info to the session
-     * IMPORTANT: We do NOT expose the accessToken to the client session
-     * It stays in the JWT token which is httpOnly
-     */
+
     async session({ session, token }) {
       if (token) {
         session.user.id = token.id as string;

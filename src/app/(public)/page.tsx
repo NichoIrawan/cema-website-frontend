@@ -1,6 +1,7 @@
 "use client";
-import { motion, useScroll, useTransform } from "framer-motion";
-import { useRef, useState, useEffect } from "react";
+
+import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
 import { ImageWithFallback } from "@/components/ui/image-with-fallback";
 import {
   Home,
@@ -12,52 +13,37 @@ import {
   Sparkles,
   DollarSign,
   Check,
+  Loader2, // Tambahan icon loading
 } from "lucide-react";
 import { Slider } from "../../components/ui/slider";
 import DesignQuizUser from "@/components/ui/DesignQuizUser";
+import { Portfolio } from "@/lib/types";
+import { portfolioService } from "@/services/portfolioService";
 
-// --- 1. Tambahkan Interface Settings agar Typescript paham struktur data Admin ---
+// --- 1. Interface Data ---
 interface CalculatorSettings {
-  services: {
-    interior: number;
-    architecture: number;
-    renovation: number;
-  };
   materials: {
     standard: number;
     premium: number;
     luxury: number;
   };
-  roomPrice: number;
+  roomPrice: number; // Dari backend
 }
 
-interface ServiceItem {
-  id: number;
-  icon: React.ComponentType<any>;
+// Interface gabungan data API + Properti UI (Icon, Warna)
+interface ServiceItemUI {
+  _id: string; // ID dari MongoDB
   title: string;
   description: string;
-  price?: string;
-  color: string;
-  image: string;
-  features: string[];
-}
-
-interface PortfolioItem {
-  id: number;
-  title: string;
+  price: string;
   category: string;
   image: string;
+  features?: string[];
+  icon: React.ElementType; // Properti UI tambahan
+  color: string; // Properti UI tambahan
 }
 
-interface ServiceOption {
-  value: "interior" | "architecture" | "renovation"; // Diperketat tipenya
-  label: string;
-}
 
-interface MaterialOption {
-  value: "standard" | "premium" | "luxury"; // Diperketat tipenya
-  label: string;
-}
 
 interface Stat {
   number: string;
@@ -65,90 +51,197 @@ interface Stat {
 }
 
 export default function HomePage() {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
   const onNavigate = (page: string) => {
     window.location.href = `/${page}`;
   };
 
-  // Calculator state
+  const getImageUrl = (photoUrl: string) => {
+    if (!photoUrl) return "https://placehold.co/600x400?text=No+Image";
+    if (photoUrl.startsWith("data:")) return photoUrl;
+    if (photoUrl.startsWith("http")) return photoUrl;
+
+    // Logic from Admin: remove '/api' suffix if present to access /uploads correctly
+    const baseUrl = API_URL.replace(/\/api$/, "");
+    return `${baseUrl}/uploads/${photoUrl}`;
+  };
+
+  // --- State Data API ---
+  const [services, setServices] = useState<ServiceItemUI[]>([]);
+  const [settings, setSettings] = useState<CalculatorSettings | null>(null);
+  const [portfolioItems, setPortfolioItems] = useState<Portfolio[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // --- Calculator State ---
   const [area, setArea] = useState([100]);
-  const [serviceType, setServiceType] = useState<
-    "interior" | "architecture" | "renovation"
-  >("interior");
+  // Simpan ID service yang dipilih agar harga akurat sesuai DB
+  const [selectedServiceId, setSelectedServiceId] = useState<string>("");
   const [materialType, setMaterialType] = useState<
     "standard" | "premium" | "luxury"
   >("standard");
   const [roomCount, setRoomCount] = useState([3]);
   const [showResult, setShowResult] = useState(false);
 
-  // --- 2. State untuk menyimpan Settingan dari Admin ---
-  const [settings, setSettings] = useState<CalculatorSettings>({
-    services: {
-      interior: 2500000,
-      architecture: 1500000,
-      renovation: 3000000,
-    },
-    materials: {
-      standard: 1.0,
-      premium: 1.4,
-      luxury: 1.8,
-    },
-    roomPrice: 2000000,
-  });
-
-  // --- 3. Load Settings dari LocalStorage (Bagian yang sebelumnya hilang) ---
   useEffect(() => {
-    // Load Portfolios & Services (Existing code)
-    setPortfolioItems(getPortfolios());
-    setServices(getServices());
-
-    // Load Calculator Settings (NEW CODE)
-    const storedCalc = localStorage.getItem("calculatorSettings");
-    if (storedCalc) {
+    const fetchData = async () => {
       try {
-        const parsedData = JSON.parse(storedCalc);
-        setSettings((prev) => ({
-          ...prev,
-          ...parsedData,
-          services: { ...prev.services, ...parsedData.services },
-          materials: { ...prev.materials, ...parsedData.materials },
-          roomPrice: parsedData.roomPrice ?? prev.roomPrice,
-        }));
-      } catch (e) {
-        console.error("Gagal load setting kalkulator", e);
+        setIsLoading(true);
+
+        const headers: HeadersInit = { "Content-Type": "application/json" };
+
+        const [settingsRes, servicesRes, portfoliosData] = await Promise.all([
+          fetch(`${API_URL}/calculator/settings`, {
+            headers,
+            cache: "no-store",
+          }),
+          fetch(`${API_URL}/services/shown`, { headers, cache: "no-store" }),
+          portfolioService.getAllPortfolios(),
+        ]);
+
+        // --- HANDLE PORTFOLIO ---
+        setPortfolioItems(portfoliosData.filter((p) => p.isShown));
+
+        // --- 1. HANDLE SETTINGS (KALKULATOR) ---
+        if (!settingsRes.ok) {
+          console.error("Gagal load settings:", settingsRes.status);
+        } else {
+          const settingsData = await settingsRes.json();
+
+          // Debugging: Cek di Console Browser (F12) apa isinya
+          console.log("Data Settings Mentah:", settingsData);
+
+          // Logika Pintar: Cek apakah data ada di root atau di dalam properti .data
+          // Ini mengatasi perbedaan struktur response backend
+          const realData = settingsData.data || settingsData;
+
+          if (realData) {
+            setSettings({
+              // Gunakan ?? agar nilai 0 tidak dianggap false
+              materials: realData.materials || {
+                standard: 1.0,
+                premium: 1.4,
+                luxury: 1.8,
+              },
+              roomPrice: realData.pricePerRoom ?? 0,
+            });
+          }
+        }
+
+        // --- 2. HANDLE SERVICES (LAYANAN) ---
+        if (!servicesRes.ok) {
+          console.error("Gagal load services:", servicesRes.status);
+        } else {
+          const servicesData = await servicesRes.json();
+
+          if (
+            servicesData.status === "ok" &&
+            Array.isArray(servicesData.data)
+          ) {
+            const mappedServices = servicesData.data.map((s: any) => {
+              let style = {
+                icon: Home,
+                color: "#8CC55A",
+                image:
+                  "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?q=80&w=1080",
+              };
+              const titleLower = s.title.toLowerCase();
+
+              if (titleLower.includes("arsitektur")) {
+                style = {
+                  icon: Building2,
+                  color: "#8CC55A",
+                  image:
+                    "https://images.unsplash.com/photo-1503387762-592deb58ef4e?q=80&w=1080",
+                };
+              } else if (titleLower.includes("renovasi")) {
+                style = {
+                  icon: Wrench,
+                  color: "#BC5D60",
+                  image:
+                    "https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?q=80&w=1080",
+                };
+              } else if (titleLower.includes("interior")) {
+                style = {
+                  icon: Home,
+                  color: "#8CC55A",
+                  image:
+                    "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?q=80&w=1080",
+                };
+              } else if (
+                titleLower.includes("konstruksi") ||
+                titleLower.includes("build")
+              ) {
+                style = {
+                  icon: Building2,
+                  color: "#E2B546",
+                  image:
+                    "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=1080",
+                };
+              } else if (
+                titleLower.includes("landscape") ||
+                titleLower.includes("taman")
+              ) {
+                style = {
+                  icon: Sparkles,
+                  color: "#8CC55A",
+                  image:
+                    "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=1080",
+                };
+              } else if (titleLower.includes("konsultasi")) {
+                style = {
+                  icon: ClipboardCheck,
+                  color: "#8CC55A",
+                  image:
+                    "https://images.unsplash.com/photo-1556761175-b413da4baf72?q=80&w=1080",
+                };
+              }
+
+              return {
+                ...s,
+                icon: style.icon,
+                color: style.color,
+                image: s.image || style.image,
+              };
+            });
+
+            setServices(mappedServices);
+            if (mappedServices.length > 0 && !selectedServiceId) {
+              setSelectedServiceId(mappedServices[0]._id);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Gagal mengambil data:", error);
+      } finally {
+        setIsLoading(false);
       }
-    }
-  }, []);
+    };
 
-  const serviceOptions: ServiceOption[] = [
-    { value: "interior", label: "Desain Interior" },
-    { value: "architecture", label: "Arsitektur" },
-    { value: "renovation", label: "Renovasi" },
-  ];
+    fetchData();
+  }, [API_URL]);
 
-  const materialOptions: MaterialOption[] = [
-    { value: "standard", label: "Standard" },
-    { value: "premium", label: "Premium" },
-    { value: "luxury", label: "Luxury" },
-  ];
-
-  // --- 4. Update Rumus agar sesuai dengan Admin Panel ---
+  // --- 3. Rumus Kalkulasi (Sama persis dengan Admin) ---
   const calculateEstimate = () => {
-    // Ambil harga dari state 'settings' yang sudah di-load dari localStorage
-    const hargaDasarPerMeter = settings.services[serviceType];
-    const multiplierMaterial = settings.materials[materialType];
+    if (!settings || !selectedServiceId) return 0;
+
+    // Cari service object berdasarkan ID yang dipilih user
+    const selectedService = services.find((s) => s._id === selectedServiceId);
+    if (!selectedService) return 0;
+
+    const hargaLayanan = Number(selectedService.price);
+    const multiplier = settings.materials[materialType];
     const biayaRuangan = settings.roomPrice * roomCount[0];
 
-    // Rumus: (Luas * HargaLayanan * Multiplier) + (Biaya Ruangan)
-    const total =
-      area[0] * hargaDasarPerMeter * multiplierMaterial + biayaRuangan;
-
-    return total;
+    // Rumus: (Luas x Harga x Multiplier) + Biaya Ruangan
+    return area[0] * hargaLayanan * multiplier + biayaRuangan;
   };
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
+      minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(value);
   };
@@ -157,248 +250,17 @@ export default function HomePage() {
     setShowResult(true);
   };
 
-  // Get portfolios from localStorage
-  const getPortfolios = (): PortfolioItem[] => {
-    if (typeof window === "undefined") return [];
-    const stored = localStorage.getItem("portfolios");
-    if (stored) {
-      const portfolios = JSON.parse(stored);
-      const featuredPortfolios = portfolios.filter(
-        (p: any) => p.showOnHomepage && p.isActive !== false
-      );
-      const activePortfolios = portfolios.filter(
-        (p: any) => p.isActive !== false
-      );
-      const itemsToShow =
-        featuredPortfolios.length > 0 ? featuredPortfolios : activePortfolios;
-      return itemsToShow.slice(0, 4).map(
-        (p: any): PortfolioItem => ({
-          id: p.id,
-          title: p.title,
-          category: p.category,
-          image: p.imageUrl,
-        })
-      );
-    }
-    return [
-      {
-        id: 1,
-        title: "Luxury Villa Design",
-        category: "Interior",
-        image:
-          "https://images.unsplash.com/photo-1581784878214-8d5596b98a01?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsdXh1cnklMjBpbnRlcmlvciUyMGRlc2lnbnxlbnwxfHx8fDE3NjE4ODEzNjR8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-      },
-      {
-        id: 2,
-        title: "Modern Living Space",
-        category: "Interior",
-        image:
-          "https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtaW5pbWFsaXN0JTIwbGl2aW5nJTIwcm9vbXxlbnwxfHx8fDE3NjE4MTQyNTJ8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-      },
-      {
-        id: 3,
-        title: "Contemporary Kitchen",
-        category: "Interior",
-        image:
-          "https://images.unsplash.com/photo-1641823911769-c55f23c25143?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBraXRjaGVuJTIwaW50ZXJpb3J8ZW58MXx8fHwxNzYxODMyMzEwfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-      },
-      {
-        id: 4,
-        title: "Elegant Bedroom",
-        category: "Interior",
-        image:
-          "https://images.unsplash.com/photo-1704428382583-c9c7c1e55d94?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb250ZW1wb3JhcnklMjBiZWRyb29tJTIwZGVzaWdufGVufDF8fHx8MTc2MTg2OTk5N3ww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-      },
-    ];
-  };
+  const materialOptions = [
+    { value: "standard", label: "Standard" },
+    { value: "premium", label: "Premium" },
+    { value: "luxury", label: "Luxury" },
+  ];
 
-  const getServices = (): ServiceItem[] => {
-    if (typeof window === "undefined") return [];
-    const stored = localStorage.getItem("services");
-    if (stored) {
-      const storedServices = JSON.parse(stored);
-
-      const serviceMap: Record<
-        string,
-        { icon: any; color: string; image: string }
-      > = {
-        "Desain Arsitektur": {
-          icon: Building2,
-          color: "#8CC55A",
-          image:
-            "https://images.unsplash.com/photo-1503387762-592deb58ef4e?q=80&w=1080",
-        },
-        "Desain Interior": {
-          icon: Home,
-          color: "#8CC55A",
-          image:
-            "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?q=80&w=1080",
-        },
-        "Renovasi & Remodeling": {
-          icon: Wrench,
-          color: "#BC5D60",
-          image:
-            "https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxyZW5vdmF0aW9uJTIwaG91c2V8ZW58MXx8fHwxNzYxOTMyMDAwfDA&ixlib=rb-4.1.0&q=80&w=1080",
-        },
-        "Landscape Design": {
-          icon: Sparkles,
-          color: "#8CC55A",
-          image:
-            "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYW5kc2NhcGUlMjBkZXNpZ258ZW58MXx8fHwxNzYxOTMyMDAwfDA&ixlib=rb-4.1.0&q=80&w=1080",
-        },
-        "Build & Construction": {
-          icon: Building2,
-          color: "#E2B546",
-          image:
-            "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb25zdHJ1Y3Rpb24lMjBzaXRlfGVufDF8fHx8MTc2MTkzMjAwMHww&ixlib=rb-4.1.0&q=80&w=1080",
-        },
-        "Konsultasi Desain": {
-          icon: ClipboardCheck,
-          color: "#8CC55A",
-          image:
-            "https://images.unsplash.com/photo-1556761175-b413da4baf72?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb25zdWx0YXRpb24lMjBtZWV0aW5nfGVufDF8fHx8MTc2MTkzMjAwMHww&ixlib=rb-4.1.0&q=80&w=1080",
-        },
-      };
-
-      const featuredServices = storedServices.filter(
-        (s: any) => s.showOnHomepage && s.isActive
-      );
-      const activeServices = storedServices.filter((s: any) => s.isActive);
-      const itemsToShow =
-        featuredServices.length > 0 ? featuredServices : activeServices;
-
-      return itemsToShow.slice(0, 3).map((s: any): ServiceItem => {
-        const defaults = serviceMap[s.name] || {
-          icon: Home,
-          color: "#8CC55A",
-          image: "https://images.unsplash.com/photo-1611001440648-e90aff42faa3",
-        };
-
-        return {
-          id: s.id,
-          icon: defaults.icon,
-          title: s.name || s.title || "Layanan", // PERBAIKAN: Gunakan s.name karena itu yang diisi di Admin
-          description: s.description,
-          price: s.price,
-          color: defaults.color,
-          image: s.imageUrl || s.image || defaults.image, // PERBAIKAN: Gunakan s.imageUrl agar gambar tidak salah/kosong
-          features: s.features || [],
-        };
-      });
-    }
-
-    return [
-      {
-        id: 1,
-        icon: Building2,
-        title: "Desain Arsitektur",
-        description:
-          "Layanan desain arsitektur lengkap untuk rumah tinggal, komersial, dan bangunan publik",
-        price: "Mulai dari Rp 15.000.000",
-        color: "#8CC55A",
-        image:
-          "https://images.unsplash.com/photo-1503387762-592deb58ef4e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhcmNoaXRlY3R1cmUlMjBkZXNpZ258ZW58MXx8fHwxNzYxOTMyMDAwfDA&ixlib=rb-4.1.0&q=80&w=1080",
-        features: [
-          "Konsep desain 3D",
-          "Gambar kerja lengkap",
-          "RAB (Rencana Anggaran Biaya)",
-          "Revisi unlimited hingga ACC",
-        ],
-      },
-      {
-        id: 2,
-        icon: Home,
-        title: "Desain Interior",
-        description:
-          "Transformasi ruang interior dengan desain yang fungsional dan estetis",
-        price: "Mulai dari Rp 10.000.000",
-        color: "#8CC55A",
-        image:
-          "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxpbnRlcmlvciUyMGRlc2lnbnxlbnwxfHx8fDE3NjE5MzIwMDB8MA&ixlib=rb-4.1.0&q=80&w=1080",
-        features: [
-          "Konsep interior 3D",
-          "Pemilihan material & finishing",
-          "Furniture custom design",
-          "Mood board & color scheme",
-        ],
-      },
-      {
-        id: 3,
-        icon: Wrench,
-        title: "Renovasi & Remodeling",
-        description:
-          "Renovasi total atau parsial untuk memberikan wajah baru pada bangunan Anda",
-        price: "Mulai dari Rp 8.000.000",
-        color: "#BC5D60",
-        image:
-          "https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxyZW5vdmF0aW9uJTIwaG91c2V8ZW58MXx8fHwxNzYxOTMyMDAwfDA&ixlib=rb-4.1.0&q=80&w=1080",
-        features: [
-          "Survey & analisa kondisi",
-          "Desain renovasi",
-          "Koordinasi kontraktor",
-          "Quality control",
-        ],
-      },
-      {
-        id: 4,
-        icon: Sparkles,
-        title: "Landscape Design",
-        description:
-          "Desain taman dan landscape untuk menciptakan outdoor space yang menawan",
-        price: "Mulai dari Rp 5.000.000",
-        color: "#8CC55A",
-        image:
-          "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYW5kc2NhcGUlMjBkZXNpZ258ZW58MXx8fHwxNzYxOTMyMDAwfDA&ixlib=rb-4.1.0&q=80&w=1080",
-        features: [
-          "Konsep landscape 3D",
-          "Pemilihan tanaman & hardscape",
-          "Sistem irigasi",
-          "Outdoor lighting design",
-        ],
-      },
-      {
-        id: 5,
-        icon: Building2,
-        title: "Build & Construction",
-        description:
-          "Layanan konstruksi lengkap dari pondasi hingga finishing dengan quality control",
-        price: "Mulai dari Rp 20.000.000",
-        color: "#E2B546",
-        image:
-          "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb25zdHJ1Y3Rpb24lMjBzaXRlfGVufDF8fHx8MTc2MTkzMjAwMHww&ixlib=rb-4.1.0&q=80&w=1080",
-        features: [
-          "Project planning",
-          "Material procurement",
-          "Skilled workers team",
-          "Weekly progress report",
-        ],
-      },
-      {
-        id: 6,
-        icon: ClipboardCheck,
-        title: "Konsultasi Desain",
-        description:
-          "Konsultasi profesional untuk mendapatkan solusi terbaik untuk proyek Anda",
-        price: "Rp 500.000 / sesi",
-        color: "#8CC55A",
-        image:
-          "https://images.unsplash.com/photo-1556761175-b413da4baf72?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb25zdWx0YXRpb24lMjBtZWV0aW5nfGVufDF8fHx8MTc2MTkzMjAwMHww&ixlib=rb-4.1.0&q=80&w=1080",
-        features: [
-          "Durasi 1-2 jam",
-          "Diskusi konsep & ide",
-          "Rekomendasi material",
-          "Estimasi budget",
-        ],
-      },
-    ];
-  };
-
-  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
-  const [services, setServices] = useState<ServiceItem[]>([]);
+  // Mock Portfolio Items REMOVED - using API data
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section - Side by Side Layout */}
+      {/* Hero Section */}
       <section className="relative py-20 bg-gradient-to-br from-[#F7F7F7] via-white to-[#F7F7F7] overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -459,6 +321,10 @@ export default function HomePage() {
                   src="/images/3d-model-house.png"
                   alt="3D Interior Design"
                   className="w-full h-auto object-contain"
+                  onError={(e) =>
+                  (e.currentTarget.src =
+                    "https://images.unsplash.com/photo-1600607686527-6fb886090705?q=80&w=600")
+                  }
                 />
               </div>
             </motion.div>
@@ -482,7 +348,7 @@ export default function HomePage() {
                 { number: "98%", label: "Kepuasan Klien" },
                 { number: "50+", label: "Tim Profesional" },
               ] as Stat[]
-            ).map((stat: Stat, index: number) => (
+            ).map((stat, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -501,7 +367,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Services Section - Enhanced with 3D Visuals */}
+      {/* Services Section - DATA LIVE DARI API */}
       <section className="py-20 bg-white" id="services">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -519,83 +385,93 @@ export default function HomePage() {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {services.map((service: ServiceItem, index: number) => (
-              <motion.div
-                key={service.id || index}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1, duration: 0.5 }}
-                whileHover={{ y: -10 }}
-                className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 flex flex-col border border-gray-100"
-              >
-                {/* Image Header */}
-                <div className="relative h-56 overflow-hidden">
-                  <ImageWithFallback
-                    src={service.image}
-                    alt={service.title}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
-                  <div className="absolute top-4 right-4 w-12 h-12 rounded-full flex items-center justify-center shadow-lg bg-white">
-                    <service.icon size={24} style={{ color: service.color }} />
+          {isLoading ? (
+            <div className="flex justify-center py-10">
+              <Loader2 className="animate-spin text-[#8CC55A]" size={40} />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {services.map((service, index) => (
+                <motion.div
+                  key={service._id} // Gunakan _id dari DB
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1, duration: 0.5 }}
+                  whileHover={{ y: -10 }}
+                  className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 flex flex-col border border-gray-100"
+                >
+                  {/* Image Header */}
+                  <div className="relative h-56 overflow-hidden">
+                    <ImageWithFallback
+                      src={service.image}
+                      alt={service.title}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
+                    <div className="absolute top-4 right-4 w-12 h-12 rounded-full flex items-center justify-center shadow-lg bg-white">
+                      <service.icon
+                        size={24}
+                        style={{ color: service.color }}
+                      />
+                    </div>
                   </div>
-                </div>
 
-                {/* Content */}
-                <div className="p-6 flex flex-col flex-grow">
-                  <h3 className="text-[#333333] mb-2">{service.title}</h3>
-                  <p className="text-[#868686] mb-4 line-clamp-2">
-                    {service.description}
-                  </p>
+                  {/* Content */}
+                  <div className="p-6 flex flex-col flex-grow">
+                    <h3 className="text-[#333333] mb-2 font-bold text-lg">
+                      {service.title}
+                    </h3>
+                    <p className="text-[#868686] mb-4 line-clamp-2 text-sm">
+                      {service.description ||
+                        "Layanan profesional dengan standar kualitas tinggi."}
+                    </p>
 
-                  {/* Price */}
-                  {service.price && (
-                    <div className="text-[#8CC55A] mb-4">{service.price}</div>
-                  )}
+                    {/* Price */}
+                    <div className="text-[#8CC55A] mb-4 font-semibold">
+                      {formatCurrency(Number(service.price))} /m²
+                    </div>
 
-                  {/* Features List */}
-                  {service.features && service.features.length > 0 && (
+                    {/* Features List */}
                     <div className="mb-6 space-y-2 flex-grow">
-                      {service.features
-                        .slice(0, 4)
-                        .map((feature: string, idx: number) => (
-                          <div
-                            key={idx}
-                            className="flex items-start gap-2 text-sm"
-                          >
-                            <Check
-                              className="text-[#8CC55A] flex-shrink-0 mt-0.5"
-                              size={16}
-                            />
-                            <span className="text-[#868686]">{feature}</span>
-                          </div>
-                        ))}
-                      {service.features.length > 4 && (
-                        <div className="text-[#868686] text-sm">
-                          +{service.features.length - 4} fitur lainnya
+                      {service.features && service.features.length > 0 ? (
+                        service.features
+                          .slice(0, 4)
+                          .map((feature: string, idx: number) => (
+                            <div
+                              key={idx}
+                              className="flex items-start gap-2 text-sm"
+                            >
+                              <Check
+                                className="text-[#8CC55A] flex-shrink-0 mt-0.5"
+                                size={16}
+                              />
+                              <span className="text-[#868686]">{feature}</span>
+                            </div>
+                          ))
+                      ) : (
+                        <div className="text-sm text-gray-400">
+                          Fitur layanan lengkap tersedia.
                         </div>
                       )}
                     </div>
-                  )}
 
-                  {/* CTA Button */}
-                  <motion.button
-                    onClick={() => onNavigate("booking")}
-                    className="w-full py-3 rounded-lg text-white transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
-                    style={{ backgroundColor: service.color }}
-                    whileHover={{ scale: 1.02, y: -2 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    Konsultasi Gratis <ArrowRight size={18} />
-                  </motion.button>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                    {/* CTA Button */}
+                    <motion.button
+                      onClick={() => onNavigate("booking")}
+                      className="w-full py-3 rounded-lg text-white transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+                      style={{ backgroundColor: service.color }}
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      Konsultasi Gratis <ArrowRight size={18} />
+                    </motion.button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
 
-          {/* View All Services CTA */}
           <div className="text-center mt-12">
             <motion.button
               onClick={() => onNavigate("services")}
@@ -609,7 +485,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Portfolio Highlights - Horizontal Scroll */}
+      {/* Portfolio Highlights */}
       <section className="py-20 bg-[#F7F7F7]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -626,33 +502,39 @@ export default function HomePage() {
             </p>
           </motion.div>
 
-          <div className="flex gap-6 overflow-x-auto pb-8 scrollbar-hide snap-x snap-mandatory">
-            {portfolioItems.map((item: PortfolioItem, index: number) => (
-              <motion.div
-                key={item.id}
-                initial={{ opacity: 0, x: 50 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                whileHover={{ scale: 1.05 }}
-                className="flex-shrink-0 w-80 snap-center cursor-pointer"
-              >
-                <div className="relative h-96 rounded-lg overflow-hidden group">
-                  <ImageWithFallback
-                    src={item.image}
-                    alt={item.title}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-6">
-                    <div>
-                      <div className="text-[#8CC55A] mb-2">{item.category}</div>
-                      <h3 className="text-white">{item.title}</h3>
+          {isLoading ? (
+            <div className="flex justify-center py-10">
+              <Loader2 className="animate-spin text-[#8CC55A]" size={40} />
+            </div>
+          ) : (
+            <div className="flex gap-6 overflow-x-auto pb-8 scrollbar-hide snap-x snap-mandatory">
+              {portfolioItems.map((item, index) => (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, x: 50 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                  whileHover={{ scale: 1.05 }}
+                  className="flex-shrink-0 w-80 snap-center cursor-pointer"
+                >
+                  <div className="relative h-96 rounded-lg overflow-hidden group">
+                    <ImageWithFallback
+                      src={getImageUrl(item.photoUrl)}
+                      alt={item.displayName}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-6">
+                      <div>
+                        <div className="text-[#8CC55A] mb-2">{item.category}</div>
+                        <h3 className="text-white">{item.displayName}</h3>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
 
           <div className="text-center mt-8">
             <motion.button
@@ -667,7 +549,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Calculator Section */}
+      {/* Calculator Section - UPDATED LOGIC */}
       <section className="py-20 bg-white" id="calculator">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -709,36 +591,45 @@ export default function HomePage() {
                       step={10}
                       className="flex-1"
                     />
-
                     <div className="w-24 text-center">
                       <span className="text-[#333333]">{area[0]} m²</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Service Type */}
+                {/* Service Type - DYNAMIC FROM API */}
                 <div>
                   <label className="block text-[#333333] mb-2">
                     <Sparkles className="inline mr-2" size={18} />
                     Jenis Layanan
                   </label>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    {serviceOptions.map((option) => (
-                      <motion.button
-                        key={option.value}
-                        onClick={() => setServiceType(option.value as any)}
-                        className={`p-4 rounded-lg border-2 transition-colors ${
-                          serviceType === option.value
+                  {isLoading ? (
+                    <div className="text-gray-400 text-sm">
+                      Memuat layanan...
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {services.map((service) => (
+                        <motion.button
+                          key={service._id}
+                          onClick={() => setSelectedServiceId(service._id)}
+                          className={`p-4 rounded-lg border-2 transition-colors flex flex-col items-center justify-center text-center h-full ${selectedServiceId === service._id
                             ? "border-[#8CC55A] bg-[#8CC55A]/10"
                             : "border-gray-200 hover:border-[#8CC55A]"
-                        }`}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        <div className="text-[#333333]">{option.label}</div>
-                      </motion.button>
-                    ))}
-                  </div>
+                            }`}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <div className="text-[#333333] font-medium text-sm">
+                            {service.title}
+                          </div>
+                          <div className="text-[#8CC55A] text-xs mt-1">
+                            {formatCurrency(Number(service.price))}
+                          </div>
+                        </motion.button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Material Type */}
@@ -752,11 +643,10 @@ export default function HomePage() {
                       <motion.button
                         key={option.value}
                         onClick={() => setMaterialType(option.value as any)}
-                        className={`p-4 rounded-lg border-2 transition-colors ${
-                          materialType === option.value
-                            ? "border-[#8CC55A] bg-[#8CC55A]/10"
-                            : "border-gray-200 hover:border-[#8CC55A]"
-                        }`}
+                        className={`p-4 rounded-lg border-2 transition-colors ${materialType === option.value
+                          ? "border-[#8CC55A] bg-[#8CC55A]/10"
+                          : "border-gray-200 hover:border-[#8CC55A]"
+                          }`}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                       >
@@ -832,10 +722,8 @@ export default function HomePage() {
                         <li>• Luas: {area[0]} m²</li>
                         <li>
                           • Layanan:{" "}
-                          {
-                            serviceOptions.find((s) => s.value === serviceType)
-                              ?.label
-                          }
+                          {services.find((s) => s._id === selectedServiceId)
+                            ?.title || "-"}
                         </li>
                         <li>
                           • Material:{" "}
@@ -881,7 +769,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CTA Section - Design Quiz */}
+      {/* CTA Section */}
       <section className="py-20 bg-[#F7F7F7]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-2xl mx-auto">
@@ -908,7 +796,7 @@ export default function HomePage() {
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[1, 2, 3].map((_: number, index: number) => (
+            {[1, 2, 3].map((_, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
@@ -918,7 +806,7 @@ export default function HomePage() {
                 className="bg-white p-6 rounded-lg shadow-md"
               >
                 <div className="flex items-center gap-1 mb-4">
-                  {[...Array(5)].map((_: any, i: number) => (
+                  {[...Array(5)].map((_, i) => (
                     <span key={i} className="text-[#E2B546]">
                       ★
                     </span>
