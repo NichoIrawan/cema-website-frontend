@@ -1,29 +1,23 @@
 import { redirect } from 'next/navigation';
-import type { User, UserRole } from '@/lib/types';
-import { UserRole as Role } from '@/lib/types';
+import { auth } from '@/auth';
 
-export default function DashboardPage() {
-    // TODO: Get actual user from auth context/session
-    // For now, using mock data
-    const user: User | null = {
-        id: '1',
-        name: 'Admin',
-        email: 'admin@email.com',
-        role: Role.CLIENT // Change to Role.CLIENT to test client redirect
-    };
+export default async function DashboardPage() {
+    const session = await auth();
 
     // If not authenticated, redirect to login
-    if (!user) {
+    if (!session?.user) {
         redirect('/login');
     }
 
     // Redirect based on user role
-    if (user.role === Role.ADMIN) {
+    const role = session.user.role;
+
+    if (role === 'admin') {
         redirect('/dashboard/admin');
-    } else if (user.role === Role.CLIENT) {
+    } else if (role === 'client') {
         redirect('/dashboard/client');
     }
 
-    // Fallback for guest or unknown roles
+    // Fallback for unknown roles
     redirect('/');
 }
