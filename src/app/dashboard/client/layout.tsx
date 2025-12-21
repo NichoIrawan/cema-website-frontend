@@ -17,16 +17,16 @@ export default function ClientDashboardLayout({ children }: ClientDashboardLayou
     };
 
     return (
-        // Root container: Full viewport, no page scroll
-        <div className="h-screen w-full bg-gray-50 flex flex-col overflow-hidden">
-            {/* Fixed Header Section */}
-            <div className="flex-none">
+        // Root container: Global scroll enabled
+        <div className="min-h-screen w-full bg-gray-50">
+            {/* Header Section */}
+            <div className="bg-white sticky top-0 z-40 shadow-sm">
                 <ClientHeader userName={userName} onLogout={handleLogout} />
                 <ClientNavigation />
             </div>
 
-            {/* Scrollable Main Content Area */}
-            <main className="flex-1 overflow-hidden flex flex-col">
+            {/* Main Content Area */}
+            <main>
                 {children}
             </main>
         </div>
