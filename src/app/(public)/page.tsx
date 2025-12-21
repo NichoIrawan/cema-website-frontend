@@ -61,9 +61,10 @@ export default function HomePage() {
     if (!photoUrl) return "https://placehold.co/600x400?text=No+Image";
     if (photoUrl.startsWith("data:")) return photoUrl;
     if (photoUrl.startsWith("http")) return photoUrl;
-    const finalUrl = `${API_URL}/uploads/${photoUrl}`;
-    console.log("Image URL Debug:", { photoUrl, API_URL, finalUrl });
-    return finalUrl;
+
+    // Logic from Admin: remove '/api' suffix if present to access /uploads correctly
+    const baseUrl = API_URL.replace(/\/api$/, "");
+    return `${baseUrl}/uploads/${photoUrl}`;
   };
 
   // --- State Data API ---

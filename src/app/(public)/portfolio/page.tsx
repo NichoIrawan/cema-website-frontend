@@ -1,8 +1,8 @@
-'use client';
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'motion/react';
-import { ImageWithFallback } from '../../../components/ui/image-with-fallback';
+"use client";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "motion/react";
+import { ImageWithFallback } from "../../../components/ui/image-with-fallback";
 import {
   Filter,
   Calendar,
@@ -11,35 +11,40 @@ import {
   Grid3x3,
   LayoutGrid,
   Search,
-} from 'lucide-react';
-import { Input } from '../../../components/ui/input';
-import { Button } from '../../../components/ui/button';
+} from "lucide-react";
+import { Input } from "../../../components/ui/input";
+import { Button } from "../../../components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '../../../components/ui/dialog';
-import { Portfolio } from '@/lib/types';
-import { portfolioService } from '@/services/portfolioService';
+} from "../../../components/ui/dialog";
+import { Portfolio } from "@/lib/types";
+import { portfolioService } from "@/services/portfolioService";
 
 export default function PortfolioPage() {
   const router = useRouter();
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [selectedPortfolio, setSelectedPortfolio] = useState<Portfolio | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [gridView, setGridView] = useState<'2' | '3'>('3');
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedPortfolio, setSelectedPortfolio] = useState<Portfolio | null>(
+    null
+  );
+  const [searchTerm, setSearchTerm] = useState("");
+  const [gridView, setGridView] = useState<"2" | "3">("3");
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
   const getImageUrl = (photoUrl: string) => {
-    if (!photoUrl) return 'https://placehold.co/600x400?text=No+Image';
-    if (photoUrl.startsWith('data:')) return photoUrl;
-    if (photoUrl.startsWith('http')) return photoUrl;
-    return `${API_URL}/uploads/${photoUrl}`;
+    if (!photoUrl) return "https://placehold.co/600x400?text=No+Image";
+    if (photoUrl.startsWith("data:")) return photoUrl;
+    if (photoUrl.startsWith("http")) return photoUrl;
+
+    // Logic from Admin: remove '/api' suffix if present
+    const baseUrl = API_URL.replace(/\/api$/, "");
+    return `${baseUrl}/uploads/${photoUrl}`;
   };
 
   useEffect(() => {
@@ -50,7 +55,7 @@ export default function PortfolioPage() {
         // Filter only shown portfolios
         setPortfolios(data.filter((p) => p.isShown));
       } catch (error) {
-        console.error('Failed to fetch portfolios:', error);
+        console.error("Failed to fetch portfolios:", error);
       } finally {
         setIsLoading(false);
       }
@@ -60,25 +65,30 @@ export default function PortfolioPage() {
   }, []);
 
   // Get unique categories
-  const categories = ['All', ...Array.from(new Set(portfolios.map((p) => p.category)))];
+  const categories = [
+    "All",
+    ...Array.from(new Set(portfolios.map((p) => p.category))),
+  ];
 
   // Filter portfolios
   const filteredPortfolios = portfolios.filter((portfolio) => {
-    const matchesCategory = selectedCategory === 'All' || portfolio.category === selectedCategory;
-    const matchesSearch = portfolio.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesCategory =
+      selectedCategory === "All" || portfolio.category === selectedCategory;
+    const matchesSearch =
+      portfolio.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       portfolio.description.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('id-ID', { year: 'numeric', month: 'long' });
+    return date.toLocaleDateString("id-ID", { year: "numeric", month: "long" });
   };
 
   return (
     <div className="min-h-screen bg-[#F7F7F7]">
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 bg-gradient-to-br from-[#8CC55A]/10 via-white to-[#E2B546]/10 overflow-hidden">
+      <section className="relative pt-50 pb-20 bg-gradient-to-br from-[#8CC55A]/10 via-white to-[#E2B546]/10 overflow-hidden">
         <div className="absolute top-20 left-10 w-72 h-72 bg-[#8CC55A]/10 rounded-full blur-3xl"></div>
         <div className="absolute bottom-20 right-10 w-96 h-96 bg-[#E2B546]/10 rounded-full blur-3xl"></div>
 
@@ -101,7 +111,8 @@ export default function PortfolioPage() {
               Proyek yang Telah Kami Kerjakan
             </h1>
             <p className="text-[#868686] text-xl max-w-3xl mx-auto">
-              Jelajahi koleksi lengkap proyek desain dan arsitektur yang telah kami selesaikan dengan penuh dedikasi dan kreativitas
+              Jelajahi koleksi lengkap proyek desain dan arsitektur yang telah
+              kami selesaikan dengan penuh dedikasi dan kreativitas
             </p>
           </motion.div>
 
@@ -115,7 +126,10 @@ export default function PortfolioPage() {
             <div className="bg-white rounded-xl shadow-lg p-6 space-y-6">
               {/* Search Bar */}
               <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#868686]" size={20} />
+                <Search
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-[#868686]"
+                  size={20}
+                />
                 <Input
                   type="text"
                   placeholder="Cari portfolio berdasarkan nama atau deskripsi..."
@@ -135,10 +149,11 @@ export default function PortfolioPage() {
                   <motion.button
                     key={category}
                     onClick={() => setSelectedCategory(category)}
-                    className={`px-4 py-2 rounded-lg transition-all ${selectedCategory === category
-                        ? 'bg-[#8CC55A] text-white shadow-md'
-                        : 'bg-gray-100 text-[#868686] hover:bg-gray-200'
-                      }`}
+                    className={`px-4 py-2 rounded-lg transition-all ${
+                      selectedCategory === category
+                        ? "bg-[#8CC55A] text-white shadow-md"
+                        : "bg-gray-100 text-[#868686] hover:bg-gray-200"
+                    }`}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
@@ -149,22 +164,24 @@ export default function PortfolioPage() {
                 {/* Grid View Toggle */}
                 <div className="ml-auto flex gap-2">
                   <motion.button
-                    onClick={() => setGridView('2')}
-                    className={`p-2 rounded-lg transition-all ${gridView === '2'
-                        ? 'bg-[#8CC55A] text-white'
-                        : 'bg-gray-100 text-[#868686] hover:bg-gray-200'
-                      }`}
+                    onClick={() => setGridView("2")}
+                    className={`p-2 rounded-lg transition-all ${
+                      gridView === "2"
+                        ? "bg-[#8CC55A] text-white"
+                        : "bg-gray-100 text-[#868686] hover:bg-gray-200"
+                    }`}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
                     <LayoutGrid size={20} />
                   </motion.button>
                   <motion.button
-                    onClick={() => setGridView('3')}
-                    className={`p-2 rounded-lg transition-all ${gridView === '3'
-                        ? 'bg-[#8CC55A] text-white'
-                        : 'bg-gray-100 text-[#868686] hover:bg-gray-200'
-                      }`}
+                    onClick={() => setGridView("3")}
+                    className={`p-2 rounded-lg transition-all ${
+                      gridView === "3"
+                        ? "bg-[#8CC55A] text-white"
+                        : "bg-gray-100 text-[#868686] hover:bg-gray-200"
+                    }`}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
@@ -175,7 +192,8 @@ export default function PortfolioPage() {
 
               {/* Results Count */}
               <div className="text-[#868686]">
-                Menampilkan {filteredPortfolios.length} dari {portfolios.length} portfolio
+                Menampilkan {filteredPortfolios.length} dari {portfolios.length}{" "}
+                portfolio
               </div>
             </div>
           </motion.div>
@@ -195,14 +213,16 @@ export default function PortfolioPage() {
               animate={{ opacity: 1 }}
               className="text-center py-20"
             >
-              <div className="text-[#868686] text-xl mb-4">Tidak ada portfolio ditemukan</div>
+              <div className="text-[#868686] text-xl mb-4">
+                Tidak ada portfolio ditemukan
+              </div>
               <p className="text-[#868686] mb-8">
                 Coba ubah filter atau kata kunci pencarian Anda
               </p>
               <Button
                 onClick={() => {
-                  setSelectedCategory('All');
-                  setSearchTerm('');
+                  setSelectedCategory("All");
+                  setSearchTerm("");
                 }}
                 className="bg-[#8CC55A] hover:bg-[#7AB84A]"
               >
@@ -211,8 +231,11 @@ export default function PortfolioPage() {
             </motion.div>
           ) : (
             <div
-              className={`grid grid-cols-1 ${gridView === '3' ? 'md:grid-cols-2 lg:grid-cols-3' : 'md:grid-cols-2'
-                } gap-8`}
+              className={`grid grid-cols-1 ${
+                gridView === "3"
+                  ? "md:grid-cols-2 lg:grid-cols-3"
+                  : "md:grid-cols-2"
+              } gap-8`}
             >
               <AnimatePresence mode="popLayout">
                 {filteredPortfolios.map((portfolio, index) => (
@@ -249,7 +272,9 @@ export default function PortfolioPage() {
 
                     {/* Content */}
                     <div className="p-6">
-                      <h3 className="text-[#333333] mb-2">{portfolio.displayName}</h3>
+                      <h3 className="text-[#333333] mb-2">
+                        {portfolio.displayName}
+                      </h3>
                       <p className="text-[#868686] mb-4 line-clamp-2">
                         {portfolio.description}
                       </p>
@@ -277,15 +302,14 @@ export default function PortfolioPage() {
             viewport={{ once: true }}
             className="bg-gradient-to-br from-[#8CC55A] to-[#7AB84A] rounded-2xl p-12 text-center text-white shadow-2xl"
           >
-            <h2 className="text-white mb-4">
-              Siap Memulai Proyek Anda?
-            </h2>
+            <h2 className="text-white mb-4">Siap Memulai Proyek Anda?</h2>
             <p className="text-white/90 text-xl mb-8 max-w-2xl mx-auto">
-              Mari wujudkan visi Anda menjadi kenyataan bersama tim profesional kami
+              Mari wujudkan visi Anda menjadi kenyataan bersama tim profesional
+              kami
             </p>
             <div className="flex flex-wrap gap-4 justify-center">
               <motion.button
-                onClick={() => router.push('/booking')}
+                onClick={() => router.push("/booking")}
                 className="px-8 py-4 bg-white text-[#8CC55A] rounded-lg hover:bg-gray-100 transition-colors inline-flex items-center gap-2 shadow-lg"
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
@@ -293,7 +317,7 @@ export default function PortfolioPage() {
                 Konsultasi Gratis <ArrowRight size={20} />
               </motion.button>
               <motion.button
-                onClick={() => router.push('/contact')}
+                onClick={() => router.push("/contact")}
                 className="px-8 py-4 bg-transparent border-2 border-white text-white rounded-lg hover:bg-white/10 transition-colors inline-flex items-center gap-2"
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
@@ -306,7 +330,10 @@ export default function PortfolioPage() {
       </section>
 
       {/* Portfolio Detail Dialog */}
-      <Dialog open={!!selectedPortfolio} onOpenChange={() => setSelectedPortfolio(null)}>
+      <Dialog
+        open={!!selectedPortfolio}
+        onOpenChange={() => setSelectedPortfolio(null)}
+      >
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl p-8 mt-12">
           {selectedPortfolio && (
             <>
@@ -359,7 +386,7 @@ export default function PortfolioPage() {
                   <Button
                     onClick={() => {
                       setSelectedPortfolio(null);
-                      router.push('/booking');
+                      router.push("/booking");
                     }}
                     className="flex-1 bg-[#8CC55A] hover:bg-[#7AB84A]"
                   >
@@ -368,7 +395,7 @@ export default function PortfolioPage() {
                   <Button
                     onClick={() => {
                       setSelectedPortfolio(null);
-                      router.push('/contact');
+                      router.push("/contact");
                     }}
                     variant="outline"
                     className="flex-1 border-[#8CC55A] text-[#8CC55A] hover:bg-[#8CC55A]/10 bg-white"
