@@ -29,8 +29,8 @@ export default function LoginPage() {
     setPopup({ ...popup, show: false });
     // Jika login sukses, arahkan ke dashboard setelah popup ditutup
     if (popup.type === "success") {
-      router.push(callbackUrl);
-      router.refresh();
+      // Force full page reload to ensure all layout/styles are refreshed
+      window.location.href = callbackUrl;
     }
   };
 
