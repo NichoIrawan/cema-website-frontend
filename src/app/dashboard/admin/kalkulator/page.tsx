@@ -68,7 +68,6 @@ export default function CalculatorPage() {
       try {
         setIsLoading(true);
 
-        // [SESUAI NEXT-AUTH.D.TS] Ambil token langsung dari root session
         const token = session?.accessToken;
 
         const headers: HeadersInit = {

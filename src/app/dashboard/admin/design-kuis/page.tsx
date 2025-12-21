@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import {
   Save,
   Plus,
@@ -17,15 +18,6 @@ import {
 // --- KONFIGURASI API ---
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-// Helper untuk mengambil Token
-const getAuthHeaders = () => {
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("token") : "";
-  return {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
-  };
-};
 
 // --- TIPE DATA ---
 
@@ -57,7 +49,7 @@ interface ConfirmModalState {
 }
 
 export default function DesignQuizAdmin() {
-  // --- STATE ---
+  const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(false);
 
   // Style (Local Storage)
@@ -101,6 +93,9 @@ export default function DesignQuizAdmin() {
 
   // --- LOAD DATA (GET) ---
   useEffect(() => {
+    // Tunggu sampai status authentikasi selesai loading
+    if (status === "loading") return;
+
     // Load Styles (Local)
     const savedStyles = localStorage.getItem("quizStyles");
     if (savedStyles) setStyles(JSON.parse(savedStyles));
@@ -110,9 +105,18 @@ export default function DesignQuizAdmin() {
       if (!API_URL) return;
 
       try {
+        const token = session?.accessToken;
+        const headers: HeadersInit = {
+          "Content-Type": "application/json",
+        };
+
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+
         const res = await fetch(`${API_URL}/quiz-questions`, {
           method: "GET",
-          headers: getAuthHeaders(),
+          headers: headers,
         });
 
         if (res.ok) {
@@ -132,7 +136,7 @@ export default function DesignQuizAdmin() {
     };
 
     fetchQuestions();
-  }, []);
+  }, [status, session]);
 
   // --- HANDLERS ---
 
@@ -140,30 +144,57 @@ export default function DesignQuizAdmin() {
   const handleSave = async () => {
     setIsLoading(true);
     try {
+      const token = session?.accessToken;
+      if (!token) {
+        showToast("Sesi habis. Silahkan login ulang.", "error");
+        return;
+      }
+
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      };
+
       // 1. Simpan Styles ke LocalStorage
       localStorage.setItem("quizStyles", JSON.stringify(styles));
 
       // 2. Simpan Perubahan ke API
       const currentQuestions = Array.isArray(questions) ? questions : [];
 
-      const updatePromises = currentQuestions.map((q) =>
-        fetch(`${API_URL}/quiz-questions/${q.id}`, {
-          method: "PUT",
-          headers: getAuthHeaders(),
-          body: JSON.stringify({
-            id: q.id,
-            text: q.text,
-            imageUrl: q.imageUrl,
-            relatedStyle: q.relatedStyle,
-          }),
-        })
-      );
+      const updatePromises = currentQuestions.map(async (q) => {
+        try {
+          const res = await fetch(`${API_URL}/quiz-questions/${q.id}`, {
+            method: "PUT",
+            headers: headers,
+            body: JSON.stringify({
+              id: q.id,
+              text: q.text,
+              imageUrl: q.imageUrl,
+              relatedStyle: q.relatedStyle,
+            }),
+          });
 
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            // Throw error to be caught by Promise.allSettled or handled here
+            throw new Error(errData.message || `Failed to update ${q.id} (${res.status})`);
+          }
+          return res;
+        } catch (err: any) {
+          console.error(`Failed to update question ${q.id}:`, err);
+          throw err;
+        }
+      });
+
+      // Use Promise.allSettled to track which succeeded and which failed (optional, but Promise.all fails fast)
+      // Actually standard Promise.all is fine if we just want to know if *any* failed.
+      // But let's use all to catch the first error.
       await Promise.all(updatePromises);
-      showToast("Data berhasil disimpan ke server!", "success"); // Ganti isSaved
-    } catch (error) {
-      console.error(error);
-      showToast("Gagal menyimpan data ke server.", "error"); // Ganti alert
+
+      showToast("Data berhasil disimpan ke server!", "success");
+    } catch (error: any) {
+      console.error("Save error:", error);
+      showToast(`Gagal menyimpan: ${error.message}`, "error");
     } finally {
       setIsLoading(false);
     }
@@ -192,9 +223,17 @@ export default function DesignQuizAdmin() {
       setQuestions(currentQuestions.filter((q) => q.id !== id));
 
       try {
+        const token = session?.accessToken;
+        const headers: HeadersInit = {
+          "Content-Type": "application/json",
+        };
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+
         await fetch(`${API_URL}/quiz-questions/${id}`, {
           method: "DELETE",
-          headers: getAuthHeaders(),
+          headers: headers,
         });
         showToast("Pertanyaan berhasil dihapus.", "success");
       } catch (error) {
@@ -224,7 +263,7 @@ export default function DesignQuizAdmin() {
   };
 
   const addQuestion = async () => {
-    const token = localStorage.getItem("token");
+    const token = session?.accessToken;
     if (!token) {
       showToast("Sesi habis. Silahkan login ulang.", "error"); // Ganti alert
       return;
@@ -245,7 +284,10 @@ export default function DesignQuizAdmin() {
     try {
       await fetch(`${API_URL}/quiz-questions`, {
         method: "POST",
-        headers: getAuthHeaders(),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify(newQ),
       });
     } catch (error) {
@@ -295,6 +337,20 @@ export default function DesignQuizAdmin() {
     }
   };
 
+  if (status === "loading") {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin text-blue-600">Loading...</div>
+      </div>
+    );
+  }
+
+  if (status === "unauthenticated") {
+    return (
+      <div className="p-10 text-center">Akses Ditolak. Silakan Login.</div>
+    );
+  }
+
   return (
     <div className="space-y-6 pb-20 relative">
       {/* Header */}
@@ -315,11 +371,10 @@ export default function DesignQuizAdmin() {
         <button
           onClick={handleSave}
           disabled={isLoading}
-          className={`flex items-center gap-2 text-white px-4 py-2 rounded-lg transition-colors ${
-            isLoading
-              ? "bg-gray-400 cursor-not-allowed"
-              : "bg-blue-600 hover:bg-blue-700"
-          }`}
+          className={`flex items-center gap-2 text-white px-4 py-2 rounded-lg transition-colors ${isLoading
+            ? "bg-gray-400 cursor-not-allowed"
+            : "bg-blue-600 hover:bg-blue-700"
+            }`}
         >
           <Save size={18} /> {isLoading ? "Menyimpan..." : "Simpan Data"}
         </button>
@@ -329,21 +384,19 @@ export default function DesignQuizAdmin() {
       <div className="flex gap-4 border-b border-gray-200">
         <button
           onClick={() => setActiveTab("styles")}
-          className={`pb-3 px-4 text-sm font-medium transition-all ${
-            activeTab === "styles"
-              ? "text-blue-600 border-b-2 border-blue-600"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
+          className={`pb-3 px-4 text-sm font-medium transition-all ${activeTab === "styles"
+            ? "text-blue-600 border-b-2 border-blue-600"
+            : "text-gray-500 hover:text-gray-700"
+            }`}
         >
           1. Atur Kategori Desain (Hasil)
         </button>
         <button
           onClick={() => setActiveTab("questions")}
-          className={`pb-3 px-4 text-sm font-medium transition-all ${
-            activeTab === "questions"
-              ? "text-blue-600 border-b-2 border-blue-600"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
+          className={`pb-3 px-4 text-sm font-medium transition-all ${activeTab === "questions"
+            ? "text-blue-600 border-b-2 border-blue-600"
+            : "text-gray-500 hover:text-gray-700"
+            }`}
         >
           2. Atur Pertanyaan & Gambar
         </button>
@@ -557,11 +610,10 @@ export default function DesignQuizAdmin() {
       {/* 1. TOAST NOTIFICATION (Pojok Kanan Bawah) */}
       {notification.show && (
         <div
-          className={`fixed bottom-10 right-10 px-6 py-4 rounded-lg shadow-xl border flex items-center gap-3 animate-in slide-in-from-right duration-300 z-50 ${
-            notification.type === "success"
-              ? "bg-green-50 border-green-200 text-green-800"
-              : "bg-red-50 border-red-200 text-red-800"
-          }`}
+          className={`fixed bottom-10 right-10 px-6 py-4 rounded-lg shadow-xl border flex items-center gap-3 animate-in slide-in-from-right duration-300 z-50 ${notification.type === "success"
+            ? "bg-green-50 border-green-200 text-green-800"
+            : "bg-red-50 border-red-200 text-red-800"
+            }`}
         >
           {notification.type === "success" ? (
             <CheckCircle size={24} className="text-green-600" />
