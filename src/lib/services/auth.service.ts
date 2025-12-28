@@ -1,9 +1,11 @@
-import { 
-  LoginPayload, 
-  RegisterPayload, 
-  AuthResponseSchema,
-  AuthResponse 
-} from "@/lib/schemas/booking.schema";
+import {
+  LoginPayload,
+  RegisterPayload,
+  LoginResponseSchema,
+  LoginResponse,
+  RegisterResponseSchema,
+  RegisterResponse,
+} from "@/lib/schemas/auth.schema";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -24,7 +26,7 @@ export class AuthServiceError extends Error {
  * @param credentials - Login payload
  * @returns Auth response with user and token
  */
-export async function login(credentials: LoginPayload): Promise<AuthResponse> {
+export async function login(credentials: LoginPayload): Promise<LoginResponse> {
   try {
     const response = await fetch(`${API_URL}/login`, {
       method: "POST",
@@ -43,10 +45,10 @@ export async function login(credentials: LoginPayload): Promise<AuthResponse> {
     }
 
     const data = await response.json();
-    
+
     // Validate response
-    const parsed = AuthResponseSchema.safeParse(data);
-    
+    const parsed = LoginResponseSchema.safeParse(data);
+
     if (!parsed.success) {
       console.error("❌ [AuthService] Invalid login response:", parsed.error);
       throw new AuthServiceError("Invalid response from login API");
@@ -67,7 +69,9 @@ export async function login(credentials: LoginPayload): Promise<AuthResponse> {
  * @param userData - Registration payload
  * @returns Auth response with user and token
  */
-export async function register(userData: RegisterPayload): Promise<AuthResponse> {
+export async function register(
+  userData: RegisterPayload
+): Promise<RegisterResponse> {
   try {
     const response = await fetch(`${API_URL}/register`, {
       method: "POST",
@@ -89,12 +93,15 @@ export async function register(userData: RegisterPayload): Promise<AuthResponse>
     }
 
     const data = await response.json();
-    
+
     // Validate response
-    const parsed = AuthResponseSchema.safeParse(data);
-    
+    const parsed = RegisterResponseSchema.safeParse(data);
+
     if (!parsed.success) {
-      console.error("❌ [AuthService] Invalid register response:", parsed.error);
+      console.error(
+        "❌ [AuthService] Invalid register response:",
+        parsed.error
+      );
       throw new AuthServiceError("Invalid response from register API");
     }
 
