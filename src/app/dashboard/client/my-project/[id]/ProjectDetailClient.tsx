@@ -139,14 +139,60 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
                         {activeTab === 'files' && (
                             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
                                 <h3 className="font-semibold text-slate-800 mb-4">Dokumen Proyek</h3>
-                                <div className="space-y-3">
-                                    {['RAB_Final.pdf', 'Gambar_Kerja.dwg', 'Kontrak.pdf', 'Timeline.xlsx'].map((file, i) => (
-                                        <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
-                                            <FileText size={18} style={{ color: BRAND.primary }} />
-                                            <span className="text-slate-700">{file}</span>
-                                        </div>
-                                    ))}
-                                </div>
+                                {project.documents && project.documents.length > 0 ? (
+                                    <div className="space-y-3">
+                                        {project.documents.map((doc, i) => {
+                                            // Format the uploaded date
+                                            const uploadDate = new Date(doc.uploaded_at).toLocaleDateString('id-ID', {
+                                                day: 'numeric',
+                                                month: 'short',
+                                                year: 'numeric'
+                                            });
+
+                                            // Get document type label with color
+                                            const typeConfig = {
+                                                CONTRACT: { label: 'Kontrak', color: '#3b82f6' },
+                                                BLUEPRINT: { label: 'Blueprint', color: '#8b5cf6' },
+                                                INVOICE: { label: 'Invoice', color: '#10b981' }
+                                            }[doc.type] || { label: doc.type, color: '#6b7280' };
+
+                                            return (
+                                                <a
+                                                    key={i}
+                                                    href={doc.url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group"
+                                                >
+                                                    <FileText size={20} style={{ color: BRAND.primary }} className="flex-shrink-0" />
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-slate-800 font-medium truncate group-hover:text-[#8CC540] transition-colors">
+                                                            {doc.title}
+                                                        </p>
+                                                        <div className="flex items-center gap-2 mt-1">
+                                                            <span 
+                                                                className="text-xs font-medium px-2 py-0.5 rounded text-white"
+                                                                style={{ backgroundColor: typeConfig.color }}
+                                                            >
+                                                                {typeConfig.label}
+                                                            </span>
+                                                            <span className="text-xs text-slate-500">
+                                                                • {uploadDate}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </a>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-8">
+                                        <FileText size={48} className="mx-auto text-gray-300 mb-3" />
+                                        <p className="text-slate-500 text-sm">
+                                            Belum ada dokumen yang diunggah untuk proyek ini
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
