@@ -48,6 +48,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
         image: projectData.image || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80',
         statusLabel: projectData.statusLabel || projectData.status,
         description: projectData.description || 'No description available.',
+        documents: projectData.documents || [],
         startDate: projectData.startDate || '-',
         targetDate: projectData.targetDate || '-',
         pm: projectData.pm || DEFAULT_PM,

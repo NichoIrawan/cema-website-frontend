@@ -3,10 +3,9 @@ import type { NextAuthConfig } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { z } from "zod";
 
-// 1. Tambahkan Augmentation agar TypeScript tidak error soal 'role' dan 'accessToken'
 declare module "next-auth" {
   interface User {
-    role: string ;
+    role: string;
     accessToken: string;
     profilePicture?: string;
   }
@@ -81,7 +80,7 @@ export const authConfig: NextAuthConfig = {
           // SESUAIKAN DENGAN STRUKTUR BACKEND: result.status & result.data
           if (result.status === "success" && result.data) {
             const { user, token } = result.data;
-            
+
             return {
               id: user._id, // Ambil dari user._id sesuai log backend
               name: user.name || user.email,
