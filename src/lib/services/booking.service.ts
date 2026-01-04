@@ -1,8 +1,9 @@
-import { 
-  BookingPayload, 
+import {
+  BookingPayload,
   BookingResponse,
+  BookingResponseSchema,
   BookingFormData,
-  toBookingPayload
+  toBookingPayload,
 } from "@/lib/schemas/booking.schema";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -10,7 +11,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 /**
  * Booking Service
  * Client-side service that calls the BFF endpoint
- * 
+ *
  * NOTE: Since we use BFF pattern with httpOnly cookies,
  * actual API calls must go through Server Actions.
  * This file provides the interface for the hook.
@@ -26,19 +27,21 @@ export class BookingServiceError extends Error {
 /**
  * Create a new booking via BFF endpoint
  * This calls the Next.js API route which handles auth
- * 
+ *
  * @param formData - Form data from booking page
  * @returns Booking response
  */
-export async function createBookingFromForm(formData: BookingFormData): Promise<BookingResponse> {
+export async function createBookingFromForm(
+  formData: BookingFormData
+): Promise<BookingResponse> {
   const payload = toBookingPayload(formData);
-  
+
   try {
     // Call Next.js API route (BFF pattern)
-    const response = await fetch('/api/booking', {
-      method: 'POST',
+    const response = await fetch("/api/booking", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),
     });
@@ -51,7 +54,25 @@ export async function createBookingFromForm(formData: BookingFormData): Promise<
       );
     }
 
-    return await response.json();
+    const data = await response.json();
+
+    console.log(
+      "📦 [BookingService] Received response:",
+      JSON.stringify(data, null, 2)
+    );
+
+    // Validate response
+    const parsed = BookingResponseSchema.safeParse(data);
+
+    if (!parsed.success) {
+      console.error(
+        "❌ [BookingService] Invalid booking response:",
+        parsed.error
+      );
+      throw new BookingServiceError("Invalid response from booking API");
+    }
+
+    return parsed.data;
   } catch (error) {
     if (error instanceof BookingServiceError) {
       throw error;
@@ -60,4 +81,3 @@ export async function createBookingFromForm(formData: BookingFormData): Promise<
     throw new BookingServiceError("Failed to create booking");
   }
 }
-
