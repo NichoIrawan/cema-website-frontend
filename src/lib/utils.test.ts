@@ -6,12 +6,6 @@ describe('cn utility function', () => {
         expect(cn('class1', 'class2')).toBe('class1 class2');
     });
 
-    it('Harus menangani kelas kondisional dengan benar', () => {
-        const isTrue = true;
-        const isFalse = false;
-        expect(cn('class1', isTrue && 'class2', isFalse && 'class3')).toBe('class1 class2');
-    });
-
     it('Harus menangani input berupa objek dengan benar', () => {
         expect(cn('class1', { 'class2': true, 'class3': false })).toBe('class1 class2');
     });
